@@ -95,7 +95,7 @@ LIMIT 20;
 
 -- MAGIC %md ## 4. Brand → generic
 -- MAGIC The generic alternative has the same ingredient, strength and form. Counts show current patient/product opportunities. Dollar amounts are **annualized payer-paid savings**, before rebates, assuming continued use at the current dose and prices. Clinical equivalence and coverage still need review.
--- MAGIC 
+-- MAGIC
 -- MAGIC `annual_savings_if_all_switched` is only filled when every candidate has a supported price. `annual_savings_for_priced_patients` shows the known subtotal; it must not be presented as savings for the unpriced patients. Each patient/product is counted once, regardless of how many generic NDCs exist.
 
 -- COMMAND ----------
