@@ -13,4 +13,5 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements-databricks.txt
       - run: dbt deps
-      - run: dbt parse --no-partial-parse --profiles-dir ci --vars '{"use_coderx_enterprise": ${{ matrix.enterprise }}}'
+      - run: >-
+          dbt parse --no-partial-parse --profiles-dir ci --vars '{"use_coderx_enterprise": ${{ matrix.enterprise }}}'
