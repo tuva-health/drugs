@@ -1,0 +1,43 @@
+rule_id,rule_version,condition_code,condition_name,atc_prefix,drug_name_contains,refill_eligible_flag,rule_note
+1,2026-10-26,t2d,Type 2 Diabetes Mellitus,A10,,1,Glucose-lowering medication; not a guideline-concordance measure
+2,2026-10-26,htn,Hypertension,C02,,1,
+3,2026-10-26,htn,Hypertension,C03,,1,
+4,2026-10-26,htn,Hypertension,C07,,1,
+5,2026-10-26,htn,Hypertension,C08,,1,
+6,2026-10-26,htn,Hypertension,C09,,1,
+7,2026-10-26,cad,Coronary Artery Disease,B01AC,,1,Any listed CAD-related therapy; OTC aspirin may be absent from claims
+8,2026-10-26,cad,Coronary Artery Disease,C10,,1,Any listed CAD-related therapy; OTC aspirin may be absent from claims
+9,2026-10-26,cad,Coronary Artery Disease,C01D,,1,Any listed CAD-related therapy; OTC aspirin may be absent from claims
+10,2026-10-26,cad,Coronary Artery Disease,C07,,1,Any listed CAD-related therapy; OTC aspirin may be absent from claims
+11,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,,0,Any obstructive-airway medicine counts as observed treatment; does not assess controller adequacy
+12,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03BA,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+13,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03AK,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+14,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03AL,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+15,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03DC,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+16,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03DX,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+17,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,salmeterol,1,Long-acting maintenance ingredient; confirm regimen
+18,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,formoterol,1,Long-acting maintenance ingredient; confirm regimen
+19,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,indacaterol,1,Long-acting maintenance ingredient; confirm regimen
+20,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,olodaterol,1,Long-acting maintenance ingredient; confirm regimen
+21,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,vilanterol,1,Long-acting maintenance ingredient; confirm regimen
+22,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,tiotropium,1,Long-acting maintenance ingredient; confirm regimen
+23,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,aclidinium,1,Long-acting maintenance ingredient; confirm regimen
+24,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,umeclidinium,1,Long-acting maintenance ingredient; confirm regimen
+25,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,glycopyrr,1,Long-acting maintenance ingredient; confirm regimen
+26,2026-10-26,copd,Chronic Obstructive Pulmonary Disease,R03,revefenacin,1,Long-acting maintenance ingredient; confirm regimen
+27,2026-10-26,asthma,Asthma,R03,,0,Any obstructive-airway medicine counts as observed treatment; does not assess controller adequacy
+28,2026-10-26,asthma,Asthma,R03BA,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+29,2026-10-26,asthma,Asthma,R03AK,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+30,2026-10-26,asthma,Asthma,R03AL,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+31,2026-10-26,asthma,Asthma,R03DC,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+32,2026-10-26,asthma,Asthma,R03DX,,1,Potential refill only; confirm scheduled use including as-needed ICS-formoterol
+33,2026-10-26,asthma,Asthma,R03,salmeterol,1,Long-acting maintenance ingredient; confirm regimen
+34,2026-10-26,asthma,Asthma,R03,formoterol,1,Long-acting maintenance ingredient; confirm regimen
+35,2026-10-26,asthma,Asthma,R03,indacaterol,1,Long-acting maintenance ingredient; confirm regimen
+36,2026-10-26,asthma,Asthma,R03,olodaterol,1,Long-acting maintenance ingredient; confirm regimen
+37,2026-10-26,asthma,Asthma,R03,vilanterol,1,Long-acting maintenance ingredient; confirm regimen
+38,2026-10-26,asthma,Asthma,R03,tiotropium,1,Long-acting maintenance ingredient; confirm regimen
+39,2026-10-26,asthma,Asthma,R03,aclidinium,1,Long-acting maintenance ingredient; confirm regimen
+40,2026-10-26,asthma,Asthma,R03,umeclidinium,1,Long-acting maintenance ingredient; confirm regimen
+41,2026-10-26,asthma,Asthma,R03,glycopyrr,1,Long-acting maintenance ingredient; confirm regimen
+42,2026-10-26,asthma,Asthma,R03,revefenacin,1,Long-acting maintenance ingredient; confirm regimen

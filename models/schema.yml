@@ -1,0 +1,208 @@
+version: 2
+models:
+- name: drugs__medication
+  description: Claims-derived Core medication with payer-paid and CodeRx enrichment;
+    one row per source/medication. Invalid durations remain with an exposure status.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+        - medication_id
+  columns:
+  - name: data_source
+    data_tests:
+    - not_null
+  - name: medication_id
+    data_tests:
+    - not_null
+- name: drugs__drug_episode
+  description: Same clinical drug ingredient/strength/form treatment episodes; inclusive
+    endpoints, configurable uncovered-day tolerance. Continuity does not imply covered
+    supply.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - episode_id
+  columns:
+  - name: episode_id
+    data_tests:
+    - not_null
+- name: drugs__condition_evidence
+  description: Unresolved recent Tuva-grouper diagnoses for the five configured chronic
+    conditions, including claim-level provenance.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+        - condition_id
+  columns:
+  - name: data_source
+    data_tests:
+    - not_null
+  - name: condition_id
+    data_tests:
+    - not_null
+- name: drugs__source_freshness
+  description: Latest observed pharmacy file, ingest and service dates per source.
+    Not a certified claims completion date.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+  columns:
+  - name: data_source
+    data_tests:
+    - not_null
+- name: drugs__patient_context
+  description: Source-scoped patient context, enrollment and record/source freshness
+    for worklist interpretation.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+        - person_id
+  columns:
+  - name: data_source
+    data_tests:
+    - not_null
+  - name: person_id
+    data_tests:
+    - not_null
+- name: drugs__medication_condition
+  description: Medication-to-condition evidence from versioned ATC rules; not a statement
+    of the actual prescribing indication.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+        - medication_id
+        - condition_code
+  columns:
+  - name: data_source
+    data_tests:
+    - not_null
+  - name: medication_id
+    data_tests:
+    - not_null
+  - name: condition_code
+    data_tests:
+    - not_null
+- name: drugs__condition_status
+  description: One current assessment per source/person/condition. Nullable flags
+    preserve unknown exposure status.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - condition_status_id
+  columns:
+  - name: condition_status_id
+    data_tests:
+    - not_null
+  - name: open_drug_gap_flag
+    description: 1 = review candidate, 0 = not flagged, null = unable to assess.
+    data_tests:
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+  - name: needs_refill_flag
+    description: 1 = review candidate, 0 = not flagged, null = unable to assess.
+    data_tests:
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+- name: drugs__open_drug_gap
+  description: 'Potential current gaps: recent condition evidence and no known active
+    qualifying supply. Unknown exposure is excluded.'
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - condition_status_id
+  columns:
+  - name: condition_status_id
+    data_tests:
+    - not_null
+- name: drugs__needs_refill
+  description: Potential condition-level refill review for repeated maintenance fills
+    due soon or recently overdue, excluding uncertain exposure.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - condition_status_id
+  columns:
+  - name: condition_status_id
+    data_tests:
+    - not_null
+- name: drugs__generic_alternative
+  description: Active catalog generic NDCs grouped by exact clinical drug. Enterprise
+    requires ANDA and marketing date validity.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - generic_ndc_code
+  columns:
+  - name: generic_ndc_code
+    data_tests:
+    - not_null
+- name: drugs__brand_generic_opportunity
+  description: One current brand per source/person/clinical product, with availability
+    separate from priceability and additive prospective payer-paid savings.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - opportunity_id
+  columns:
+  - name: opportunity_id
+    data_tests:
+    - not_null
+- name: drugs__stg_packages
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - ndc_code
+- name: drugs__stg_drugs
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - drug_id
+- name: drugs__drug_condition
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - drug_id
+        - condition_code
+- name: drugs__fill
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+        - medication_id
+seeds:
+- name: drugs__condition_rule
+  description: Versioned analyst-facing condition/ATC rules. Not a clinical prescribing
+    protocol.
+  columns:
+  - name: rule_id
+    data_tests:
+    - not_null
+    - unique

@@ -1,0 +1,50 @@
+bundle:
+  name: drugs
+variables:
+  warehouse_id:
+    description: SQL warehouse for dbt
+  catalog:
+    description: Output and default Core catalog
+  core_catalog:
+    description: Catalog containing Tuva Core and Open terminology
+  use_coderx_enterprise:
+    default: 'false'
+    description: Native JSON boolean string, true or false
+workspace:
+  root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/drugs/${bundle.target}
+sync:
+  exclude:
+  - dbt_packages/**
+  - target/**
+  - logs/**
+  - .databricks/**
+resources:
+  jobs:
+    drugs_build:
+      name: Drugs Mart — Dev
+      description: Four Core medication workflows with native dbt tests. On demand;
+        no schedule.
+      max_concurrent_runs: 1
+      tasks:
+      - task_key: build_drugs
+        environment_key: dbt
+        timeout_seconds: 3600
+        dbt_task:
+          project_directory: ${workspace.file_path}
+          source: WORKSPACE
+          warehouse_id: ${var.warehouse_id}
+          catalog: ${var.catalog}
+          schema: drugs
+          commands:
+          - dbt deps
+          - dbt build --vars '{"drugs_core_database":"${var.core_catalog}","drugs_coderx_database":"${var.core_catalog}","use_coderx_enterprise":${var.use_coderx_enterprise}}'
+      environments:
+      - environment_key: dbt
+        spec:
+          environment_version: '2'
+          dependencies:
+          - dbt-core==1.12.5
+          - dbt-databricks==1.12.7
+targets:
+  dev:
+    default: true

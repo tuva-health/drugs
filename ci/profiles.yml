@@ -1,0 +1,12 @@
+# Parse-only profile; never used for warehouse execution.
+drugs:
+  target: parse
+  outputs:
+    parse:
+      type: databricks
+      host: parse-only.invalid
+      http_path: /sql/1.0/warehouses/unused
+      token: parse-only-placeholder
+      catalog: parse_only
+      schema: drugs
+      threads: 1

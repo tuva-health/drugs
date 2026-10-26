@@ -1,0 +1,33 @@
+version: 2
+sources:
+- name: tuva_core
+  database: '{{ var(''drugs_core_database'', target.database) }}'
+  schema: '{{ var(''drugs_core_schema'', ''core'') }}'
+  tables:
+  - name: medication
+  - name: pharmacy_claim
+  - name: condition
+  - name: patient
+  - name: eligibility
+  - name: medical_claim
+- name: coderx_open
+  database: '{{ var(''drugs_core_database'', target.database) }}'
+  schema: '{{ var(''drugs_terminology_schema'', ''terminology'') }}'
+  tables:
+  - name: drugs
+    identifier: coderx_drugs
+  - name: packages
+    identifier: coderx_packages
+  - name: classes
+    identifier: coderx_classes
+- name: coderx_enterprise
+  database: '{{ var(''drugs_coderx_database'', var(''drugs_core_database'', target.database))
+    }}'
+  schema: '{{ var(''drugs_coderx_schema'', ''terminology'') }}'
+  tables:
+  - name: drugs
+    identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}drugs'
+  - name: packages
+    identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}packages'
+  - name: classes
+    identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}classes'

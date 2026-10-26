@@ -1,0 +1,12 @@
+target/
+logs/
+dbt_packages/
+.venv*/
+.env*
+profiles.yml
+__pycache__/
+.databricks/
+.DS_Store
+!ci/profiles.yml
+
+.user.yml

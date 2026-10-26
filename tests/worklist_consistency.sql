@@ -1,0 +1,2 @@
+select condition_status_id from {{ ref('drugs__open_drug_gap') }} where open_drug_gap_flag<>1 or active_condition_supply_flag<>0 or unknown_duration_flag<>0 or recent_unmapped_drug_flag<>0 or deceased_flag<>0
+union all select condition_status_id from {{ ref('drugs__needs_refill') }} where needs_refill_flag<>1 or maintenance_fill_dates<{{ var('drugs_refill_min_fills') }} or latest_maintenance_medication_id is null or days_overdue not between -{{ var('drugs_refill_lookahead_days') }} and {{ var('drugs_refill_max_overdue_days') }}
