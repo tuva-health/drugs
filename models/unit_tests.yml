@@ -7,7 +7,7 @@ unit_tests:
       drugs_as_of_date: '2026-10-26'
       drugs_episode_gap_days: 0
   given:
-  - input: ref('drugs__fill')
+  - input: ref('drugs__ingredient_fill')
     rows: &id001
     - person_id: p
       data_source: a
@@ -130,7 +130,7 @@ unit_tests:
       drugs_as_of_date: '2026-10-26'
       drugs_episode_gap_days: 1
   given:
-  - input: ref('drugs__fill')
+  - input: ref('drugs__ingredient_fill')
     rows: *id001
   expect:
     rows:
@@ -169,7 +169,7 @@ unit_tests:
       drugs_as_of_date: '2026-10-26'
       drugs_episode_gap_days: 30
   given:
-  - input: ref('drugs__fill')
+  - input: ref('drugs__ingredient_fill')
     rows: *id001
   expect:
     rows:
@@ -1008,3 +1008,303 @@ unit_tests:
     - data_source: b
       source_rx_freshness_date: '2026-10-20'
       source_rx_freshness_basis: ingest_datetime
+- name: ingredient_expansion_preserves_each_component_and_clinical_fallback
+  model: drugs__ingredient_fill
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__fill')
+    rows:
+    - person_id: p
+      data_source: a
+      therapy_grain: clinical_drug
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      medication_id: combo
+      therapy_id: clinical:combo
+      drug_id: combo
+      clinical_drug_id: ccombo
+    - person_id: p
+      data_source: a
+      therapy_grain: clinical_drug
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      medication_id: highdose
+      therapy_id: clinical:high
+      drug_id: brand_high
+      clinical_drug_id: high
+    - person_id: p
+      data_source: a
+      therapy_grain: clinical_drug
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      medication_id: unknown
+      therapy_id: ndc:unknown
+      drug_id: null
+      clinical_drug_id: null
+    - person_id: p
+      data_source: a
+      therapy_grain: clinical_drug
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      medication_id: core_only
+      therapy_id: ndc:unknown
+      drug_id: null
+      clinical_drug_id: null
+      rxnorm_code: core_rx
+  - input: ref('drugs__stg_ingredient')
+    rows:
+    - drug_id: combo
+      ingredient_id: i1
+      ingredient_name: ingredient one
+    - drug_id: combo
+      ingredient_id: i2
+      ingredient_name: ingredient two
+    - drug_id: high
+      ingredient_id: i1
+      ingredient_name: ingredient one
+    - drug_id: core_rx
+      ingredient_id: i1
+      ingredient_name: ingredient one
+  expect:
+    rows:
+    - medication_id: combo
+      drug_code: i1
+      therapy_id: ingredient:i1
+    - medication_id: combo
+      drug_code: i2
+      therapy_id: ingredient:i2
+    - medication_id: highdose
+      drug_code: i1
+      therapy_id: ingredient:i1
+    - medication_id: core_only
+      drug_code: i1
+      therapy_id: ingredient:i1
+- name: ingredient_episode_unions_strength_changes_and_does_not_count_overlap_twice
+  model: drugs__episode_fill
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__ingredient_fill')
+    rows:
+    - person_id: p
+      data_source: a
+      therapy_grain: clinical_drug
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      medication_id: low
+      therapy_id: ingredient:i1
+      clinical_product_key: clinical:low
+    - person_id: p
+      data_source: a
+      therapy_grain: clinical_drug
+      dispensing_date: '2026-01-20'
+      days_supply: 30
+      supply_start_date: '2026-01-20'
+      supply_end_date: '2026-02-18'
+      medication_id: high
+      therapy_id: ingredient:i1
+      clinical_product_key: clinical:high
+    - person_id: p
+      data_source: a
+      therapy_grain: clinical_drug
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      medication_id: combo
+      therapy_id: ingredient:i2
+      clinical_product_key: clinical:combo
+    - person_id: p
+      data_source: b
+      therapy_grain: clinical_drug
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      medication_id: other
+      therapy_id: ingredient:i1
+  expect:
+    rows:
+    - medication_id: low
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 30
+    - medication_id: high
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 19
+    - medication_id: combo
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 30
+    - medication_id: other
+      data_source: b
+      episode_number: 1
+      contributed_covered_days: 30
+- name: chf_afib_related_therapy_and_no_aspirin_or_lidocaine_substitution
+  model: drugs__drug_condition
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__stg_drugs')
+    rows:
+    - drug_id: sglt2
+      clinical_drug_name: empagliflozin 10 MG Oral Tablet
+    - drug_id: apixaban
+      clinical_drug_name: apixaban 5 MG Oral Tablet
+    - drug_id: aspirin
+      clinical_drug_name: aspirin 81 MG Oral Tablet
+    - drug_id: amio
+      clinical_drug_name: amiodarone 200 MG Oral Tablet
+    - drug_id: lido
+      clinical_drug_name: lidocaine patch
+  - input: ref('drugs__stg_classes')
+    rows:
+    - drug_id: sglt2
+      atc_4_code: A10BK
+    - drug_id: apixaban
+      atc_4_code: B01AF
+    - drug_id: aspirin
+      atc_4_code: B01AC
+    - drug_id: amio
+      atc_4_code: C01BD
+    - drug_id: lido
+      atc_4_code: C01BB
+  - input: ref('drugs__condition_rule')
+    rows:
+    - rule_id: 1
+      condition_code: chf
+      condition_name: Heart Failure
+      atc_prefix: A10BK
+      refill_eligible_flag: 1
+    - rule_id: 2
+      condition_code: afib
+      condition_name: Atrial Fibrillation and Flutter
+      atc_prefix: B01AF
+      refill_eligible_flag: 1
+    - rule_id: 3
+      condition_code: afib
+      condition_name: Atrial Fibrillation and Flutter
+      atc_prefix: C01B
+      drug_name_contains: amiodarone
+      refill_eligible_flag: 1
+  expect:
+    rows:
+    - drug_id: sglt2
+      condition_code: chf
+    - drug_id: apixaban
+      condition_code: afib
+    - drug_id: amio
+      condition_code: afib
+- name: switch_summary_does_not_extrapolate_unpriced_patients
+  model: drugs__brand_generic_summary
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__brand_generic_opportunity')
+    rows:
+    - assessment_date: '2026-10-26'
+      data_source: a
+      generic_available_flag: 1
+      clinical_drug_id: x
+      generic_alternative_name: generic 10 mg
+      person_id: one
+      drug_name: Brand A
+      pricing_status: priced_for_review
+      estimated_annual_savings: 100
+    - assessment_date: '2026-10-26'
+      data_source: a
+      generic_available_flag: 1
+      clinical_drug_id: x
+      generic_alternative_name: generic 10 mg
+      person_id: two
+      drug_name: Brand A
+      pricing_status: insufficient_paid_benchmark
+      estimated_annual_savings: null
+    - assessment_date: '2026-10-26'
+      data_source: a
+      generic_available_flag: 1
+      clinical_drug_id: x
+      generic_alternative_name: generic 10 mg
+      person_id: three
+      drug_name: Brand B
+      pricing_status: priced_for_review
+      estimated_annual_savings: 200
+    - assessment_date: '2026-10-26'
+      data_source: a
+      generic_available_flag: 1
+      clinical_drug_id: x
+      generic_alternative_name: generic 10 mg
+      person_id: four
+      drug_name: Brand B
+      pricing_status: priced_for_review
+      estimated_annual_savings: 300
+  expect:
+    rows:
+    - brand_drug: Brand A
+      patients_who_could_switch: 2
+      patients_with_savings_estimate: 1
+      annual_savings_for_priced_patients: 100
+      annual_savings_if_all_switched: null
+      savings_coverage_status: incomplete_pricing
+    - brand_drug: Brand B
+      patients_who_could_switch: 2
+      patients_with_savings_estimate: 2
+      annual_savings_for_priced_patients: 500
+      annual_savings_if_all_switched: 500
+      savings_coverage_status: all_patients_priced
+- name: condition_counts_include_zero_and_unknown_without_inflating_gaps
+  model: drugs__condition_summary
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__condition_status')
+    rows:
+    - person_id: p1
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: chf
+      condition_name: Heart Failure
+      open_drug_gap_flag: 1
+      needs_refill_flag: 1
+      outreach_readiness_status: current_record_review
+    - person_id: p2
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: chf
+      condition_name: Heart Failure
+      open_drug_gap_flag: null
+      needs_refill_flag: null
+    - person_id: p3
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: afib
+      condition_name: Atrial Fibrillation and Flutter
+      open_drug_gap_flag: 0
+      needs_refill_flag: 0
+  expect:
+    rows:
+    - condition_code: chf
+      patients_with_open_gaps: 1
+      patients_needing_refill: 1
+      gap_unassessable_patients: 1
+    - condition_code: afib
+      patients_with_open_gaps: 0
+      patients_needing_refill: 0
+      gap_unassessable_patients: 0

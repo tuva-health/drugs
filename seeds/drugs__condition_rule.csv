@@ -41,3 +41,31 @@ rule_id,rule_version,condition_code,condition_name,atc_prefix,drug_name_contains
 40,2026-10-26,asthma,Asthma,R03,umeclidinium,1,Long-acting maintenance ingredient; confirm regimen
 41,2026-10-26,asthma,Asthma,R03,glycopyrr,1,Long-acting maintenance ingredient; confirm regimen
 42,2026-10-26,asthma,Asthma,R03,revefenacin,1,Long-acting maintenance ingredient; confirm regimen
+43,2026-10-26,chf,Heart Failure,C09,,1,Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+44,2026-10-26,chf,Heart Failure,C03C,,1,Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+45,2026-10-26,chf,Heart Failure,C03DA,,1,Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+46,2026-10-26,chf,Heart Failure,A10BK,,1,Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+47,2026-10-26,chf,Heart Failure,C01AA,,1,Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+48,2026-10-26,chf,Heart Failure,C01EB17,,1,Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+49,2026-10-26,chf,Heart Failure,C01DA,,1,Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+50,2026-10-26,chf,Heart Failure,C02DB02,,1,Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+51,2026-10-26,chf,Heart Failure,C07,carvedilol,1,HF-related beta blocker; formulation and indication require review
+52,2026-10-26,chf,Heart Failure,C07,metoprolol,1,HF-related beta blocker; formulation and indication require review
+53,2026-10-26,chf,Heart Failure,C07,bisoprolol,1,HF-related beta blocker; formulation and indication require review
+54,2026-10-26,chf,Heart Failure,A10BD,dapagliflozin,1,SGLT2 combination; actual HF indication not inferred
+55,2026-10-26,chf,Heart Failure,A10BD,empagliflozin,1,SGLT2 combination; actual HF indication not inferred
+56,2026-10-26,chf,Heart Failure,A10BD,sotagliflozin,1,SGLT2 combination; actual HF indication not inferred
+57,2026-10-26,afib,Atrial Fibrillation and Flutter,B01AA,,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+58,2026-10-26,afib,Atrial Fibrillation and Flutter,B01AE07,,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+59,2026-10-26,afib,Atrial Fibrillation and Flutter,B01AF,,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+60,2026-10-26,afib,Atrial Fibrillation and Flutter,C07,,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+61,2026-10-26,afib,Atrial Fibrillation and Flutter,C08DB,,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+62,2026-10-26,afib,Atrial Fibrillation and Flutter,C08DA,,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+63,2026-10-26,afib,Atrial Fibrillation and Flutter,C01AA,,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+64,2026-10-26,afib,Atrial Fibrillation and Flutter,C01B,amiodarone,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+65,2026-10-26,afib,Atrial Fibrillation and Flutter,C01B,dronedarone,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+66,2026-10-26,afib,Atrial Fibrillation and Flutter,C01B,flecainide,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+67,2026-10-26,afib,Atrial Fibrillation and Flutter,C01B,propafenone,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+68,2026-10-26,afib,Atrial Fibrillation and Flutter,C01B,dofetilide,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+69,2026-10-26,afib,Atrial Fibrillation and Flutter,C01B,disopyramide,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure
+70,2026-10-26,afib,Atrial Fibrillation and Flutter,C01B,quinidine,1,Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention measure

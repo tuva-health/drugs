@@ -31,3 +31,13 @@ sources:
     identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}packages'
   - name: classes
     identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}classes'
+  - name: ingredients
+    identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}ingredients'
+- name: rxnorm_open
+  database: '{{ var(''drugs_rxnorm_database'', var(''drugs_core_database'', target.database))
+    }}'
+  schema: '{{ var(''drugs_rxnorm_schema'', ''terminology'') }}'
+  tables:
+  - name: drug_ingredient
+    identifier: '{{ var(''drugs_rxnorm_ingredient_table'', ''rxnorm_drug_ingredient'')
+      }}'

@@ -13,7 +13,7 @@ with usable as (
 ), adjusted as (
  select *,cast({% if stockpile %}{{ dbt.dateadd('day','prior_supply','max(supply_anchor) over(partition by person_id,data_source,therapy_id order by dispensing_date,medication_id rows unbounded preceding)') }}{% else %}dispensing_date{% endif %} as date) as supply_start_date from anchors
 )
-select medication_id,person_id,data_source,therapy_id,therapy_name,therapy_grain,drug_id,clinical_drug_id,
+select medication_id,person_id,data_source,therapy_id,therapy_name,therapy_grain,drug_id,clinical_drug_id,rxnorm_code,
  dispensing_date,days_supply,supply_start_date,
  cast({{ dbt.dateadd('day','days_supply-1','supply_start_date') }} as date) as supply_end_date
 from adjusted
