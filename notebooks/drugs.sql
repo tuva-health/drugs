@@ -2,29 +2,28 @@
 -- MAGIC %md # Drugs Data Mart
 -- MAGIC
 -- MAGIC This notebook demonstrates how to do analytics using the Drugs data mart.  This data mart is an open-source data mart that runs on top of the Tuva Core Data Model.
-
 -- MAGIC
--- MAGIC Set **Catalog** and optional **Data source** above, then select **Run all**. Leave data source blank to include all sources. The schema is fixed to `drugs`.
+-- MAGIC
+-- MAGIC Set **Catalog** above, then select **Run all**. The setup cell selects the catalog; every query uses `drugs.table` and includes all data sources.
 
 -- COMMAND ----------
 
 USE CATALOG IDENTIFIER(TRIM(:catalog));
-USE SCHEMA drugs;
 
--- Catalog and data source come from the inputs above. Change condition to drill into another row.
+-- The Catalog input selects the database for the entire notebook.
+-- Queries use the fixed drugs schema. Change condition to drill into another row.
 DECLARE OR REPLACE VARIABLE selected_condition STRING DEFAULT 'Heart Failure';
 
 -- COMMAND ----------
 
--- MAGIC %md ## 1. Drug episodes
+-- MAGIC %md ## 1. Drug Episodes
 -- MAGIC One row per patient, ingredient and episode. Drug code is an RxNorm ingredient code. Changes in dose, form or brand stay together; combination pills contribute to each ingredient. Default continuity allows 30 uncovered days, without counting those days as active supply.
 
 -- COMMAND ----------
 
 SELECT episode_id, data_source, person_id,
        drug_code, drug_name, start_date, end_date
-FROM IDENTIFIER(TRIM(:catalog) || '.drugs.drug_episode')
-WHERE COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source)
+FROM drugs.drug_episode
 ORDER BY data_source, person_id, drug_name, start_date
 LIMIT 25;
 
@@ -37,8 +36,7 @@ LIMIT 25;
 
 SELECT condition_name AS condition,
        SUM(patients_with_open_gaps) AS number_of_gaps
-FROM IDENTIFIER(TRIM(:catalog) || '.drugs.condition_summary')
-WHERE COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source)
+FROM drugs.condition_summary
 GROUP BY condition_name
 ORDER BY number_of_gaps DESC;
 
@@ -54,9 +52,8 @@ SELECT data_source, person_id, condition_name,
        condition_freshness_date, patient_rx_freshness_date,
        source_rx_freshness_date, source_clinical_lag_days,
        outreach_readiness_status
-FROM IDENTIFIER(TRIM(:catalog) || '.drugs.open_drug_gap')
+FROM drugs.open_drug_gap
 WHERE condition_name = selected_condition
-  AND (COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source))
 ORDER BY CASE WHEN outreach_readiness_status = 'current_record_review' THEN 0 ELSE 1 END,
          data_source, person_id
 LIMIT 20;
@@ -66,7 +63,7 @@ LIMIT 20;
 -- MAGIC %md ## 3. Needs refill — counts and percentage by condition
 -- MAGIC Repeated maintenance fills, due in the next 7 days or up to 30 days overdue. These are condition-level potential refill needs, including CHF and AFib. Confirm that the treatment is still intended and scheduled.
 -- MAGIC
--- MAGIC The denominator is everyone with qualifying condition evidence in the selected claims sources, excluding known deceased patients. It includes people without prior fills and those whose medication exposure is uncertain. Sources with no observed pharmacy feed are excluded. The percentage is the refill-flag count divided by that population; an unflagged patient is not necessarily adequately treated. Counts are distinct within each source, not deduplicated across sources.
+-- MAGIC The denominator is everyone with qualifying condition evidence across all claims sources, excluding known deceased patients. It includes people without prior fills and those whose medication exposure is uncertain. Sources with no observed pharmacy feed are excluded. The percentage is the refill-flag count divided by that population; an unflagged patient is not necessarily adequately treated. Counts are distinct within each source, not deduplicated across sources.
 
 -- COMMAND ----------
 
@@ -76,11 +73,10 @@ SELECT condition_name AS condition,
        COUNT(*) AS number_with_condition,
        ROUND(100.0 * SUM(CASE WHEN needs_refill_flag = 1 THEN 1 ELSE 0 END)
              / NULLIF(COUNT(*), 0), 2) AS percent_needing_refill
-FROM IDENTIFIER(TRIM(:catalog) || '.drugs.condition_status') c
+FROM drugs.condition_status c
 WHERE deceased_flag = 0
-  AND (COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source))
   AND EXISTS (
-    SELECT 1 FROM IDENTIFIER(TRIM(:catalog) || '.drugs.source_freshness') s
+    SELECT 1 FROM drugs.source_freshness s
     WHERE s.data_source = c.data_source AND s.source_latest_fill_date IS NOT NULL
   )
 GROUP BY condition_name
@@ -98,9 +94,8 @@ SELECT data_source, person_id, condition_name,
        estimated_refill_due_date, days_overdue, refill_status,
        treatment_evidence_file_date, treatment_evidence_ingest_datetime,
        source_rx_freshness_date, outreach_readiness_status
-FROM IDENTIFIER(TRIM(:catalog) || '.drugs.needs_refill')
+FROM drugs.needs_refill
 WHERE condition_name = selected_condition
-  AND (COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source))
 ORDER BY CASE WHEN outreach_readiness_status = 'current_record_review' THEN 0 ELSE 1 END,
          days_overdue DESC, data_source, person_id
 LIMIT 20;
@@ -122,8 +117,7 @@ SELECT brand_drug, generic_alternative,
        CASE WHEN SUM(patients_without_savings_estimate) = 0
             THEN ROUND(SUM(annual_savings_for_priced_patients), 2)
        END AS annual_savings_if_all_switched
-FROM IDENTIFIER(TRIM(:catalog) || '.drugs.brand_generic_summary')
-WHERE COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source)
+FROM drugs.brand_generic_summary
 GROUP BY brand_drug, generic_alternative
 ORDER BY annual_savings_for_priced_patients DESC NULLS LAST
 LIMIT 25;
@@ -138,6 +132,5 @@ LIMIT 25;
 SELECT data_source, assessment_date,
        source_rx_file_date, source_rx_ingest_datetime,
        source_latest_fill_date
-FROM IDENTIFIER(TRIM(:catalog) || '.drugs.source_freshness')
-WHERE COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source)
+FROM drugs.source_freshness
 ORDER BY data_source;
