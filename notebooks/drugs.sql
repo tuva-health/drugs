@@ -1,14 +1,17 @@
 -- Databricks notebook source
--- MAGIC %md # Drugs: four simple examples
--- MAGIC Each section shows the SQL and its result. Counts identify review opportunities, not confirmed prescribing needs. Patient identifiers are specific to a data source. Current means the mart's latest build date; review freshness in the patient lists.
+-- MAGIC %md # Drugs Data Mart
+-- MAGIC
+-- MAGIC This notebook demonstrates how to do analytics using the Drugs data mart.  This data mart is an open-source data mart that runs on top of the Tuva Core Data Model.
+
+-- MAGIC
+-- MAGIC Set **Catalog** and optional **Data source** above, then select **Run all**. Leave data source blank to include all sources. The schema is fixed to `drugs`.
 
 -- COMMAND ----------
 
-USE CATALOG YOUR_CATALOG;
+USE CATALOG IDENTIFIER(TRIM(:catalog));
 USE SCHEMA drugs;
 
--- Leave source blank for all claims sources. Change condition to drill into another row.
-DECLARE OR REPLACE VARIABLE selected_source STRING DEFAULT '';
+-- Catalog and data source come from the inputs above. Change condition to drill into another row.
 DECLARE OR REPLACE VARIABLE selected_condition STRING DEFAULT 'Heart Failure';
 
 -- COMMAND ----------
@@ -20,8 +23,8 @@ DECLARE OR REPLACE VARIABLE selected_condition STRING DEFAULT 'Heart Failure';
 
 SELECT episode_id, data_source, person_id,
        drug_code, drug_name, start_date, end_date
-FROM drug_episode
-WHERE selected_source = '' OR data_source = selected_source
+FROM IDENTIFIER(TRIM(:catalog) || '.drugs.drug_episode')
+WHERE COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source)
 ORDER BY data_source, person_id, drug_name, start_date
 LIMIT 25;
 
@@ -34,8 +37,8 @@ LIMIT 25;
 
 SELECT condition_name AS condition,
        SUM(patients_with_open_gaps) AS number_of_gaps
-FROM condition_summary
-WHERE selected_source = '' OR data_source = selected_source
+FROM IDENTIFIER(TRIM(:catalog) || '.drugs.condition_summary')
+WHERE COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source)
 GROUP BY condition_name
 ORDER BY number_of_gaps DESC;
 
@@ -51,9 +54,9 @@ SELECT data_source, person_id, condition_name,
        condition_freshness_date, patient_rx_freshness_date,
        source_rx_freshness_date, source_clinical_lag_days,
        outreach_readiness_status
-FROM open_drug_gap
+FROM IDENTIFIER(TRIM(:catalog) || '.drugs.open_drug_gap')
 WHERE condition_name = selected_condition
-  AND (selected_source = '' OR data_source = selected_source)
+  AND (COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source))
 ORDER BY CASE WHEN outreach_readiness_status = 'current_record_review' THEN 0 ELSE 1 END,
          data_source, person_id
 LIMIT 20;
@@ -73,11 +76,11 @@ SELECT condition_name AS condition,
        COUNT(*) AS number_with_condition,
        ROUND(100.0 * SUM(CASE WHEN needs_refill_flag = 1 THEN 1 ELSE 0 END)
              / NULLIF(COUNT(*), 0), 2) AS percent_needing_refill
-FROM condition_status c
+FROM IDENTIFIER(TRIM(:catalog) || '.drugs.condition_status') c
 WHERE deceased_flag = 0
-  AND (selected_source = '' OR data_source = selected_source)
+  AND (COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source))
   AND EXISTS (
-    SELECT 1 FROM source_freshness s
+    SELECT 1 FROM IDENTIFIER(TRIM(:catalog) || '.drugs.source_freshness') s
     WHERE s.data_source = c.data_source AND s.source_latest_fill_date IS NOT NULL
   )
 GROUP BY condition_name
@@ -95,9 +98,9 @@ SELECT data_source, person_id, condition_name,
        estimated_refill_due_date, days_overdue, refill_status,
        treatment_evidence_file_date, treatment_evidence_ingest_datetime,
        source_rx_freshness_date, outreach_readiness_status
-FROM needs_refill
+FROM IDENTIFIER(TRIM(:catalog) || '.drugs.needs_refill')
 WHERE condition_name = selected_condition
-  AND (selected_source = '' OR data_source = selected_source)
+  AND (COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source))
 ORDER BY CASE WHEN outreach_readiness_status = 'current_record_review' THEN 0 ELSE 1 END,
          days_overdue DESC, data_source, person_id
 LIMIT 20;
@@ -119,8 +122,8 @@ SELECT brand_drug, generic_alternative,
        CASE WHEN SUM(patients_without_savings_estimate) = 0
             THEN ROUND(SUM(annual_savings_for_priced_patients), 2)
        END AS annual_savings_if_all_switched
-FROM brand_generic_summary
-WHERE selected_source = '' OR data_source = selected_source
+FROM IDENTIFIER(TRIM(:catalog) || '.drugs.brand_generic_summary')
+WHERE COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source)
 GROUP BY brand_drug, generic_alternative
 ORDER BY annual_savings_for_priced_patients DESC NULLS LAST
 LIMIT 25;
@@ -135,6 +138,6 @@ LIMIT 25;
 SELECT data_source, assessment_date,
        source_rx_file_date, source_rx_ingest_datetime,
        source_latest_fill_date
-FROM source_freshness
-WHERE selected_source = '' OR data_source = selected_source
+FROM IDENTIFIER(TRIM(:catalog) || '.drugs.source_freshness')
+WHERE COALESCE(TRIM(:data_source), '') = '' OR data_source = TRIM(:data_source)
 ORDER BY data_source;
