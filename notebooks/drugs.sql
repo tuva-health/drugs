@@ -60,15 +60,22 @@ LIMIT 20;
 
 -- COMMAND ----------
 
--- MAGIC %md ## 3. Needs refill — counts by condition
+-- MAGIC %md ## 3. Needs refill — counts and percentage by condition
 -- MAGIC Repeated maintenance fills, due in the next 7 days or up to 30 days overdue. These are condition-level potential refill needs, including CHF and AFib. Confirm that the treatment is still intended and scheduled.
+-- MAGIC
+-- MAGIC The denominator is everyone with qualifying condition evidence in the selected sources, excluding known deceased patients. It includes people without prior fills and those whose medication exposure is uncertain. The percentage is the refill-flag count divided by that population; an unflagged patient is not necessarily adequately treated. Counts are distinct within each source, not deduplicated across sources.
 
 -- COMMAND ----------
 
 SELECT condition_name AS condition,
-       SUM(patients_needing_refill) AS number_needing_refill
-FROM condition_summary
-WHERE selected_source = '' OR data_source = selected_source
+       SUM(CASE WHEN needs_refill_flag = 1 THEN 1 ELSE 0 END)
+         AS number_needing_refill,
+       COUNT(*) AS number_with_condition,
+       ROUND(100.0 * SUM(CASE WHEN needs_refill_flag = 1 THEN 1 ELSE 0 END)
+             / NULLIF(COUNT(*), 0), 2) AS percent_needing_refill
+FROM condition_status
+WHERE deceased_flag = 0
+  AND (selected_source = '' OR data_source = selected_source)
 GROUP BY condition_name
 ORDER BY number_needing_refill DESC;
 
