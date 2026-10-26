@@ -1,8 +1,9 @@
 {{ config(alias='brand_generic_opportunity') }}
 with alternatives as (
- select clinical_drug_id,count(*) as generic_ndc_count from {{ ref('drugs__generic_alternative') }} group by clinical_drug_id
+ select clinical_drug_id,min(clinical_drug_name) as generic_alternative_name,count(*) as generic_ndc_count from {{ ref('drugs__generic_alternative') }} group by clinical_drug_id
 ), assessed as (
  select b.person_id,b.data_source,b.medication_id,b.drug_name,b.clinical_drug_id,b.clinical_drug_name,b.ndc_code as brand_ndc_code,
+ a.generic_alternative_name,
  b.payer,b.plan,b.dispensing_date,b.days_supply,b.quantity,b.paid_amount,b.supply_end_date,
  b.file_date as brand_file_date,b.ingest_datetime as brand_ingest_datetime,
  coalesce(a.generic_ndc_count,0) as generic_ndc_count,case when a.generic_ndc_count>0 then 1 else 0 end as generic_available_flag,

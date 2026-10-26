@@ -4,7 +4,7 @@ with primary_class as (
  from {{ ref('drugs__stg_classes') }}
 ), enriched as (
  select m.medication_id,m.source_type,m.person_id,m.data_source,m.claim_id,m.claim_line_number,
-        m.dispensing_date,m.ndc_code,m.days_supply,m.quantity,
+        m.dispensing_date,m.ndc_code,m.rxnorm_code,m.days_supply,m.quantity,
         c.payer,c.plan,c.dispensing_provider_id,c.prescribing_provider_id,
         c.paid_amount,c.refills as reported_refills,
         coalesce(c.ingest_datetime,m.ingest_datetime) as ingest_datetime,

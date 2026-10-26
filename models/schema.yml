@@ -17,9 +17,8 @@ models:
     data_tests:
     - not_null
 - name: drugs__drug_episode
-  description: Same clinical drug ingredient/strength/form treatment episodes; inclusive
-    endpoints, configurable uncovered-day tolerance. Continuity does not imply covered
-    supply.
+  description: One source/person/atomic RxNorm ingredient episode, independent of
+    strength, form and brand. Combination fills contribute to each ingredient.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -29,8 +28,26 @@ models:
   - name: episode_id
     data_tests:
     - not_null
+  - name: person_id
+    data_tests:
+    - not_null
+  - name: data_source
+    data_tests:
+    - not_null
+  - name: drug_code
+    data_tests:
+    - not_null
+  - name: drug_name
+    data_tests:
+    - not_null
+  - name: start_date
+    data_tests:
+    - not_null
+  - name: end_date
+    data_tests:
+    - not_null
 - name: drugs__condition_evidence
-  description: Unresolved recent Tuva-grouper diagnoses for the five configured chronic
+  description: Unresolved recent Tuva-grouper diagnoses for the seven configured chronic
     conditions, including claim-level provenance.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
@@ -177,12 +194,14 @@ models:
       arguments:
         combination_of_columns:
         - ndc_code
+  description: ''
 - name: drugs__stg_drugs
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
         combination_of_columns:
         - drug_id
+  description: ''
 - name: drugs__drug_condition
   data_tests:
   - dbt_utils.unique_combination_of_columns:
@@ -190,6 +209,7 @@ models:
         combination_of_columns:
         - drug_id
         - condition_code
+  description: ''
 - name: drugs__fill
   data_tests:
   - dbt_utils.unique_combination_of_columns:
@@ -197,6 +217,49 @@ models:
         combination_of_columns:
         - data_source
         - medication_id
+  description: ''
+- name: drugs__stg_ingredient
+  description: Atomic drug/ingredient relationships.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - drug_id
+        - ingredient_id
+- name: drugs__ingredient_fill
+  description: Dispensed supply expanded to each mapped ingredient.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+        - medication_id
+        - drug_code
+- name: drugs__episode_mapping_quality
+  description: Visible excluded exposure and ingredient mapping counts.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+- name: drugs__condition_summary
+  description: Source-scoped counts that reconcile to patient drilldowns.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+        - condition_code
+- name: drugs__brand_generic_summary
+  description: Switchable patients and priced/all-patient annual savings by brand
+    and generic clinical product.
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - data_source
+        - brand_drug
+        - clinical_drug_id
 seeds:
 - name: drugs__condition_rule
   description: Versioned analyst-facing condition/ATC rules. Not a clinical prescribing

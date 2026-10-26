@@ -10,7 +10,7 @@ Use Tuva Core 1.0 with populated claims data, Tuva condition-grouper names in `c
 # packages.yml in a downstream dbt project
 packages:
   - git: https://github.com/tuva-health/drugs.git
-    revision: v0.1.0
+    revision: v0.2.0
 ```
 
 ```yaml
@@ -45,7 +45,7 @@ Other dependencies are `core.condition`, `core.medical_claim` (diagnosis freshne
 
 | Table | Grain / purpose |
 | --- | --- |
-| `drug_episode` | Source, patient, clinical drug, observed episode start |
+| `drug_episode` | Source, patient, atomic RxNorm ingredient, observed episode start |
 | `open_drug_gap` | Source, patient, condition; potential absence of current qualifying supply |
 | `needs_refill` | Source, patient, condition; potential refill due soon or recently overdue |
 | `brand_generic_opportunity` | Source, patient, current branded clinical product; availability and prospective savings |
@@ -54,6 +54,9 @@ Other dependencies are `core.condition`, `core.medical_claim` (diagnosis freshne
 | `condition_evidence` | Relevant Core condition records and freshness lineage |
 | `medication_condition` | Medication/condition evidence with matched ATC rule |
 | `generic_alternative` | Currently active generic NDC and clinical drug; available independently of observed claims/prices |
+| `condition_summary` | Counts of gaps and refills by source and condition; reconciles to the patient worklists |
+| `brand_generic_summary` | Brand, generic clinical product, switchable patients and prospective savings; full-cohort savings only when all patients are priced |
+| `episode_mapping_quality` | Usable claims excluded from episodes because no ingredient mapping is available |
 | `patient_context`, `source_freshness` | Enrollment, death and patient/source data freshness |
 
 Join `condition_status_id` between the condition worklists. Drill into diagnosis evidence by source/person/condition name and medication evidence by source/person/condition code. `latest_maintenance_medication_id` links directly to `medication`. Join `brand_generic_opportunity.clinical_drug_id` to `generic_alternative` to see candidate NDCs; aggregate savings from the parent opportunity table **before** expanding alternatives to avoid multiplying savings.
@@ -63,10 +66,10 @@ Join `condition_status_id` between the condition worklists. Drill into diagnosis
 The algorithm is inspired by [OHDSI drug eras](https://ohdsi.github.io/CommonDataModel/cdm54.html#drug_era) and [Dima and Dediu's published AdhereR methods](https://doi.org/10.1371/journal.pone.0174426). OHDSI uses a 30-day persistence window; AdhereR explicitly parameterizes permissible gaps and carryover. Our defaults are configurable assumptions, not clinical thresholds.
 
 1. Require a nonfuture dispensing date, an NDC, positive integer days supply of at most 365, and no nonpositive quantity. Missing quantity does not invalidate known days supply. Unknown durations stay in `medication` but do not create exposure.
-2. Group at the CodeRx clinical-drug level (ingredient, strength and form). Brand and generic forms of that same clinical drug can share an episode. Different strengths/forms and combination ingredient sets remain separate. Unmapped drugs fall back to NDC; the grain is exposed. This consistent key works in both terminology tiers.
+2. Group by atomic **RxNorm ingredient (IN)**, independent of strength, dosage form or brand. A dose change continues the ingredient episode if it meets the gap rule. Combination pills contribute separately to each ingredient, so moving between a combination and its separate components preserves continuity. Supply is calculated at the original clinical-product level before expanding ingredients; optional stockpiling never crosses strengths/forms. Unmapped ingredients are excluded from episodes and counted in `episode_mapping_quality`; they never silently become NDC-level episodes.
 3. A fill's inclusive end is dispensing date + days supply - 1. By default early-fill overlaps are unioned, **without stockpiling**, following OHDSI's convention. Optional stockpiling carries all excess supply within the same clinical product; this is a sensitivity setting and can overestimate supply after dose/regimen changes. No carryover occurs between sources, patients, strengths or forms.
 4. Compare each interval with the maximum preceding end. If the uncovered days exceed `drugs_episode_gap_days`, start a new episode. Default 30 means gaps of 0, 1 and 30 days stay in the same episode; 31 starts another. Set 0 for strictly adjacent/overlapping coverage, or 1 to allow one uncovered day.
-5. End the episode at the last estimated supply day, with no grace-period extension. Report unioned covered days and actual uncovered days separately. `active_supply_flag` is 1 only when a fill covers the assessment date, regardless of episode tolerance.
+5. Return a long table with `episode_id`, `data_source`, `person_id`, `drug_code` (RxNorm IN), `drug_name`, `start_date`, and `end_date`, plus coverage metrics. End the episode at the last estimated supply day, with no grace-period extension. Report unioned covered days and actual uncovered days separately. `active_supply_flag` is 1 only when a fill covers the assessment date, regardless of episode tolerance.
 
 Example: a January 1 fill for 30 days ends January 30. January 31 is an adjacent refill with zero uncovered days; February 1 leaves one uncovered day. Both remain one episode under the default. That one uncovered day is still a supply gap.
 
@@ -74,7 +77,7 @@ Episode dates describe observed dispensing history and projected supply, not pro
 
 ## Open Drug Gaps and Needs Refill
 
-The initial cohorts use unresolved Tuva-grouper condition records in the 365 days ending on the assessment date: Type 2 Diabetes Mellitus, Hypertension, Coronary Artery Disease, Chronic Obstructive Pulmonary Disease, and Asthma. Missing/future condition dates do not qualify. Analysts can edit the versioned `drugs__condition_rule` seed; it is an auditable mapping, not a diagnosis or prescribing protocol.
+The initial cohorts use unresolved Tuva-grouper condition records in the 365 days ending on the assessment date: Type 2 Diabetes Mellitus, Hypertension, Coronary Artery Disease, Chronic Obstructive Pulmonary Disease, Asthma, Heart Failure (CHF), and Atrial Fibrillation and Flutter (AFib). Missing/future condition dates do not qualify. Analysts can edit the versioned `drugs__condition_rule` seed; it is an auditable mapping, not a diagnosis or prescribing protocol.
 
 | Condition | Evidence counted as related medication |
 | --- | --- |
@@ -82,6 +85,10 @@ The initial cohorts use unresolved Tuva-grouper condition records in the 365 day
 | HTN | ATC C02, C03, C07, C08, C09 antihypertensive classes |
 | CAD | ATC B01AC antiplatelets, C10 lipid-modifying drugs, C01D cardiac vasodilators, C07 beta blockers |
 | COPD / Asthma | ATC R03 obstructive-airway medications; rescue-only drugs count as treatment evidence but do not trigger scheduled refill estimates |
+| CHF | Renin-angiotensin drugs, selected beta blockers, loop diuretics, MRAs, SGLT2 drugs, digoxin, ivabradine, nitrates and hydralazine |
+| AFib / Flutter | Oral anticoagulants or related rate/rhythm drugs: beta blockers, diltiazem/verapamil, digoxin, and selected antiarrhythmics; aspirin and lidocaine are not counted |
+
+The Tuva groups combine HF subtypes and AFib/flutter. These worklists do not assess ejection fraction, stroke-risk eligibility for anticoagulation, contraindications, or a complete HF regimen. A beta blocker counts as AFib-related therapy but does not establish appropriate stroke prevention.
 
 These intentionally broad **any-related-treatment** rules answer the requested question about absent medication evidence. They do not certify guideline-concordant treatment: for example, rescue-only asthma treatment suppresses the broad open-gap flag but does not establish adequate controller treatment, and CAD antiplatelet use does not establish adequate lipid therapy. Many drugs treat several conditions. OTC aspirin, cash fills, samples, administered drugs outside the pharmacy feed and lifestyle-only management can explain an apparent gap.
 
@@ -90,6 +97,12 @@ These intentionally broad **any-related-treatment** rules answer the requested q
 `needs_refill` requires at least two distinct maintenance dispensing dates in the past 365 days, an estimated due date within the next 7 days or at most 30 days overdue, and no unresolved exposure uncertainty. The due date is the day after the last known maintenance supply ends. A current replacement medication suppresses overdue recommendations. Respiratory rescue-only medications are excluded; repeat controller/long-acting medications can qualify, with scheduled versus PRN use requiring review. The list is condition-level, so it will not flag a missing component of a multidrug regimen while another qualifying treatment covers the condition. Older overdue patients remain in Open Drug Gaps rather than being assumed to need automatic restart.
 
 Due-soon patients need not have an open gap yet; patients due today or recently overdue can appear in both worklists. Flags are independent and evidence is retained.
+
+## Reporting and drilldowns
+
+`condition_summary` provides source/condition counts of `patients_with_open_gaps` and `patients_needing_refill`. Sum by condition for the headline report; filter `open_drug_gap` or `needs_refill` on that condition and source to inspect patient IDs, evidence dates and freshness. One patient can appear under several conditions. Counts remain source-scoped, not deduplicated across payers.
+
+The [simple SQL notebook](notebooks/drugs.sql) shows the episode long table, both condition-count reports and patient drilldowns, and the brand/generic report. Replace `YOUR_CATALOG`, then run all cells; `selected_condition` and `selected_source` control the drilldowns. SQL-warehouse notebook jobs can execute it and retain actual example outputs in the run.
 
 ## Brand vs. Generic
 
@@ -103,6 +116,8 @@ For a priced estimate, require positive payer-paid brand and generic claims, pos
 - Generic paid per 30 days = brand quantity / days supply × 30 × median generic payer-paid per unit.
 - Estimated savings per 30 days = max(brand minus generic, 0).
 - Annualized savings = daily savings × 365, assuming the current dose, continuation and prices for a full year.
+
+`brand_generic_summary` produces `brand_drug`, `generic_alternative`, `patients_who_could_switch`, priced/unpriced patient counts, and annual savings. `annual_savings_if_all_switched` is null unless every candidate is priced. `annual_savings_for_priced_patients` is an explicitly partial subtotal when prices are missing. One generic clinical product represents its potentially many generic NDCs; alternatives do not multiply patients or dollars.
 
 Sum only `estimated_annual_savings` from `brand_generic_opportunity` with `pricing_status = 'priced_for_review'`. This estimates the priced subset of current brand users, not net realized savings or the unpriced population. Rebates, future discontinuation, benefit changes and switching costs are not modeled. No allowed amount, charged amount or patient cost sharing is used.
 
@@ -131,7 +146,23 @@ Conditions recover missing ingestion metadata through source/person/claim joins 
 | `drugs_generic_lookback_days` | `90` |
 | `drugs_generic_min_claims` / `drugs_generic_min_people` | `3` / `2` |
 
-Core and Open terminology default to `target.database`, schemas `core` and `terminology`. Enterprise defaults to the Core database and `terminology`, with `coderx_enterprise_` prefix; override `drugs_coderx_database`, `drugs_coderx_schema`, and `drugs_coderx_table_prefix` as needed. Only `drugs`, `packages` and `classes` are required from either tier. All four workflows run with Open terminology. Enterprise improves regulatory availability checks and descriptive enrichment; its indication table is deliberately not required for these condition mappings.
+Core and Open terminology default to `target.database`, schemas `core` and `terminology`. Enterprise defaults to the Core database and `terminology`, with `coderx_enterprise_` prefix; override `drugs_coderx_database`, `drugs_coderx_schema`, and `drugs_coderx_table_prefix` as needed. Both modes use CodeRx `drugs`, `packages`, and `classes`, plus the public RxNorm ingredient bridge below. Enterprise additionally uses `ingredients` to extend historical coverage and improves regulatory availability checks and descriptive enrichment. Its indication table is deliberately not required for these condition mappings.
+
+## Public ingredient terminology
+
+CodeRx Open does not include ingredient relationships. Both modes therefore use an auditable public-domain bridge from [NLM RxNorm Current Prescribable Content](https://www.nlm.nih.gov/research/umls/rxnorm/docs/prescribe.html). It requires no UMLS license. The current RxNorm IN map is preferred; Enterprise supplies atomic ingredient mappings for historical drug concepts missing from that subset. Original clinical-product supply intervals are unchanged.
+
+Download a **dated Current Prescribable Content** ZIP from [NLM](https://www.nlm.nih.gov/research/umls/rxnorm/docs/rxnormfiles.html), then run:
+
+```sh
+python scripts/build_rxnorm_ingredient_map.py \
+  --zip RxNorm_full_prescribe_MMDDYYYY.zip \
+  --release-date YYYY-MM-DD --output rxnorm_drug_ingredient.parquet
+```
+
+The script requires PyArrow (included with the tested Databricks environment). Load its output into `terminology.rxnorm_drug_ingredient` before building. The bridge columns are `drug_id`, `ingredient_id`, `ingredient_name`, `source_release_date`, and `mapping_source`. Store the dated snapshot and generated checksum metadata; point a stable view at the selected release. Override `drugs_rxnorm_database`, `drugs_rxnorm_schema`, and `drugs_rxnorm_ingredient_table` when needed.
+
+The parser follows only ingredient/component/pack/brand-to-clinical relations and resolves precise ingredients to IN concepts; it does not infer ingredients from names. Missing or retired unmappable concepts stay visible in quality counts. No licensed CodeRx content is copied into the public bridge or repository.
 
 ## Validation and contributions
 
@@ -150,3 +181,6 @@ The mapping scope was informed by these primary sources; the package does not im
 - [AHA/ACC chronic coronary disease guideline 2023](https://doi.org/10.1161/CIR.0000000000001168).
 - [GOLD 2026 report and pocket guide](https://goldcopd.org/2026-gold-report-and-pocket-guide/).
 - [GINA 2025 summary guide](https://ginasthma.org/wp-content/uploads/2025/06/GINA-Summary-Guide-2025-WEB_FINAL-WMS.pdf).
+
+- [AHA/ACC/HFSA heart failure guideline 2022](https://doi.org/10.1161/CIR.0000000000001063).
+- [ACC/AHA AFib guideline 2023](https://www.jacc.org/doi/10.1016/j.jacc.2023.08.017).
