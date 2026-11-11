@@ -14,9 +14,10 @@ The Snowflake development environment is pinned in
 install it in a virtual environment with `python -m pip install -r requirements-snowflake.txt`.
 Configure the root project's Snowflake profile before running dbt.
 
-The examples below describe the 1.0 development contract. Replace the Drugs
-revision with the reviewed commit or released tag you intend to run; the
-previous `v0.2.0` tag does not include these changes.
+The examples below pin the tested 1.0 development revision. No 1.0 release
+tag has been published; the previous `v0.2.0` tag does not include these
+changes. The public ingredient asset must be published before a fresh install
+can use this automatic loading path.
 
 ```yaml
 # packages.yml in the root project
@@ -25,7 +26,7 @@ packages:
     # Tested Core 1.0 integration revision; includes the CodeRx NDC fix.
     revision: 599e953e10fba61352bfb6e7d64c2a9b58335fb1
   - git: https://github.com/tuva-health/drugs.git
-    revision: "<DRUGS_RELEASE_OR_COMMIT>"
+    revision: f965533f86e245e41218bec3993a3c152ff268ac
 ```
 
 ```yaml
