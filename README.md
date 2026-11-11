@@ -1,41 +1,58 @@
 # Drugs
 
-Four medication analytics workflows on top of Tuva Core: **Drug Episodes, Open Drug Gaps, Needs Refill, and Brand vs. Generic**. This standalone dbt package replaces the pharmacy mart removed from Tuva Core after v0.18.0. It does not modify Core or ship licensed terminology or patient data.
+Four medication analytics workflows on top of Tuva Core: **Drug Episodes, Open Drug Gaps, Needs Refill, and Brand vs. Generic**. This standalone dbt package replaces the pharmacy mart removed from Tuva Core after v0.18.0. It does not modify Core or ship licensed terminology or real patient data.
 
 ## Install and run
 
-Use Tuva Core 1.0 with populated claims data, Tuva condition-grouper names in `core.condition`, and CodeRx terminology. Install this package alongside Core or run it against an existing Core database.
+Install Drugs alongside Tuva Core in the root dbt project that maps your claims
+and clinical data to the Tuva Input Layer. The root project owns the Core
+version; Drugs uses Core refs rather than an independently configured copy of
+its source tables. The medication analytics use claims-derived records only.
+
+The Snowflake development environment is pinned in
+[`requirements-snowflake.txt`](requirements-snowflake.txt). From this repository,
+install it in a virtual environment with `python -m pip install -r requirements-snowflake.txt`.
+Configure the root project's Snowflake profile before running dbt.
+
+The examples below describe the 1.0 development contract. Replace the Drugs
+revision with the reviewed commit or released tag you intend to run; the
+previous `v0.2.0` tag does not include these changes.
 
 ```yaml
-# packages.yml in a downstream dbt project
+# packages.yml in the root project
 packages:
+  - git: https://github.com/tuva-health/tuva-core.git
+    # Tested Core 1.0 integration revision; includes the CodeRx NDC fix.
+    revision: 599e953e10fba61352bfb6e7d64c2a9b58335fb1
   - git: https://github.com/tuva-health/drugs.git
-    revision: v0.2.0
+    revision: "<DRUGS_RELEASE_OR_COMMIT>"
 ```
 
 ```yaml
-# dbt_project.yml in the downstream project
+# dbt_project.yml in the root project
 vars:
-  drugs_core_database: YOUR_CATALOG
-  drugs_core_schema: core
-  drugs_terminology_schema: terminology
+  claims_enabled: true
   use_coderx_enterprise: false
-models:
-  drugs:
-    +schema: drugs
-seeds:
-  drugs:
-    +schema: drugs
+  drugs_data_asset_version: '1.0.0'
 ```
-
-The standard dbt schema macro appends `drugs` to the target schema when installed as a package. Configure your project's schema macro if you require exactly `drugs`. In a standalone checkout, set the profile's target schema to `drugs`; no schema macro override is needed.
 
 ```sh
 dbt deps
-dbt build --select package:drugs
+dbt build --select +package:drugs
 ```
 
-For a standalone Databricks run, install `requirements-databricks.txt` and copy `profiles.yml.example` into your external dbt profiles directory, or use `scripts/run_databricks.py --help` with an existing CLI OAuth login. Keep tokens in environment variables. The package has been executed on Databricks; other adapters require their own validation before deployment.
+On a fresh installation, the build includes required upstream Core nodes and
+package data assets. The public ingredient bridge loads with the package; no
+separate RxNorm download, Python script, or warehouse upload is required.
+Models are created in `drugs`, or `<tuva_schema_prefix>_drugs` when a prefix is
+configured. The example notebook uses the unprefixed `drugs` schema.
+
+For paid terminology, follow the [CodeRx Drug Database setup](https://thetuvaproject.com/coderx)
+and provide `coderx.packages`, `coderx.drugs`, and `coderx.classes` in the dbt
+target database before setting `use_coderx_enterprise: true`. Use native YAML
+booleans, not quoted strings. Optional Enterprise columns and ingredient
+relationships are detected separately; they are not required for the four
+baseline use cases. See [Terminology capabilities](#terminology-capabilities).
 
 ## Inputs and outputs
 
@@ -58,6 +75,7 @@ Other dependencies are `core.condition`, `core.medical_claim` (diagnosis freshne
 | `brand_generic_summary` | Brand, generic clinical product, switchable patients and prospective savings; full-cohort savings only when all patients are priced |
 | `episode_mapping_quality` | Usable claims excluded from episodes because no ingredient mapping is available |
 | `patient_context`, `source_freshness` | Enrollment, death and patient/source data freshness |
+| `terminology_status` | One-row record of the selected terminology tier, available enrichment and public ingredient asset version |
 
 Join `condition_status_id` between the condition worklists. Drill into diagnosis evidence by source/person/condition name and medication evidence by source/person/condition code. `latest_maintenance_medication_id` links directly to `medication`. Join `brand_generic_opportunity.clinical_drug_id` to `generic_alternative` to see candidate NDCs; aggregate savings from the parent opportunity table **before** expanding alternatives to avoid multiplying savings.
 
@@ -94,7 +112,7 @@ These intentionally broad **any-related-treatment** rules answer the requested q
 
 `open_drug_gap` contains patients with a qualifying condition and **no supply active today**, regardless of whether a drug was ever filled. A recent qualifying claim with unknown duration, or a recent unmapped drug, yields an unable-to-assess status in `condition_status` and a null flag. Known active treatment gives a zero gap flag. A missing pharmacy feed also prevents an assessable gap. Review freshness before outreach.
 
-`needs_refill` requires at least two distinct maintenance dispensing dates in the past 365 days, an estimated due date within the next 7 days or at most 30 days overdue, and no unresolved exposure uncertainty. The due date is the day after the last known maintenance supply ends. A current replacement medication suppresses overdue recommendations. Respiratory rescue-only medications are excluded; repeat controller/long-acting medications can qualify, with scheduled versus PRN use requiring review. The list is condition-level, so it will not flag a missing component of a multidrug regimen while another qualifying treatment covers the condition. Older overdue patients remain in Open Drug Gaps rather than being assumed to need automatic restart.
+`needs_refill` requires at least two distinct maintenance dispensing dates in the past 365 days, an estimated due date within the next 7 days or at most 30 days overdue, and no unresolved exposure uncertainty. The due date is the day after the last known maintenance supply ends. Current maintenance replacement therapy suppresses overdue recommendations. An active rescue inhaler alone does not suppress an overdue controller refill. Respiratory rescue-only medications are excluded from scheduled refill estimates; repeat controller/long-acting medications can qualify, with scheduled versus PRN use requiring review. The list is condition-level, so it will not flag a missing component of a multidrug regimen while another qualifying maintenance treatment covers the condition. Older overdue patients remain in Open Drug Gaps rather than being assumed to need automatic restart.
 
 Due-soon patients need not have an open gap yet; patients due today or recently overdue can appear in both worklists. Flags are independent and evidence is retained.
 
@@ -102,15 +120,40 @@ Due-soon patients need not have an open gap yet; patients due today or recently 
 
 `condition_summary` provides source/condition counts of `patients_with_open_gaps` and `patients_needing_refill`. Sum by condition for the headline report; filter `open_drug_gap` or `needs_refill` on that condition and source to inspect patient IDs, evidence dates and freshness. One patient can appear under several conditions. Counts remain source-scoped, not deduplicated across payers.
 
-The notebook's Needs Refill report also shows `number_with_condition` and `percent_needing_refill`. Its denominator is the full qualifying condition population across all claims sources, excluding known deceased patients. Sources without an observed pharmacy feed are excluded; within included sources, patients without prior fills and those with uncertain exposure remain in the denominator. The percentage is 100 times the refill-flag count divided by that denominator, rounded to two decimals. The query uses `condition_status` to apply the same population filter to numerator and denominator; it does not average source-level percentages. Missing refill flags are not counted as refill needs, and an unflagged patient is not necessarily adequately treated.
+`condition_summary.refill_denominator_patients` is the qualifying condition
+population across sources with an observed pharmacy feed, excluding known
+deceased patients. It includes patients without prior fills and those whose
+exposure is uncertain. `percent_needing_refill` is 100 times
+`patients_needing_refill` divided by that denominator, rounded to two decimals;
+it is null when the denominator is zero. `assessed_patients` has a different
+scope and must not be substituted for the refill denominator.
 
-The [simple SQL notebook](notebooks/drugs.sql) shows the episode long table, both condition-count reports and patient drilldowns, and the brand/generic report. Add one **Text / String** input named `catalog` with **Edit → Add parameter** in Databricks, enter the catalog containing the mart, then select **Run all**. The setup cell uses `USE CATALOG IDENTIFIER(TRIM(:catalog))`; subsequent queries use `drugs.table` references. The schema is fixed to `drugs`, and every query includes all data sources. There is no schema or data-source input. `selected_condition` in the setup cell controls the patient drilldowns. SQL-warehouse notebook jobs can pass `catalog` through `base_parameters` and retain actual example outputs in the run. Databricks documents SQL-warehouse widget creation and named parameter markers in its [widgets guide](https://learn.microsoft.com/en-us/azure/databricks/notebooks/widgets).
+When combining sources, sum the numerator and denominator first, then divide.
+Do not average source-level percentages. Missing refill flags are not counted
+as refill needs; an unflagged patient is not necessarily adequately treated.
+The `latest_maintenance_medication_id` and drug name identify the usable
+maintenance fill whose supply end drives the refill due date. That may differ
+from the most recently dispensed medication.
+
+The canonical [Drugs notebook](notebooks/drugs.ipynb) explains each use case
+with native SQL cells, patient drilldowns and Python charts. Set the database
+in its first SQL cell, then run the notebook from top to bottom. Every query
+uses `drugs.table` and includes all data sources; there are no schema,
+data-source or assessment-date inputs. The assessment date comes from the
+mart's build. Its saved example outputs must come from an executed synthetic
+build, with published synthetic data distinguished from any controlled
+scenario cohort used to demonstrate known fills and prices.
+
+The notebook is a standard `.ipynb` file. Native SQL execution and named result
+binding use Snowflake notebook metadata. Python charts use pandas and
+Matplotlib. Other notebook platforms may need their own SQL-result binding;
+a portable file format does not establish identical execution behavior.
 
 ## Brand vs. Generic
 
 The legacy pharmacy mart's useful distinction between catalog availability and priced opportunities is retained. Current users are identified from estimated supply **on the assessment date**. Select one latest active fill per source/person/clinical drug. A newer overlapping generic or unknown-duration fill suppresses an older brand candidate. Historical claims are not counted as multiple current patients.
 
-Alternatives must share the exact CodeRx clinical drug and have active/prescribable package and drug records. Enterprise also restricts candidates to NDA brands/ANDA generics and valid marketing dates. Open terminology identifies active brand/nonbrand comparators without those regulatory fields. Neither is an Orange Book therapeutic-equivalence determination; substitution requires clinical, regulatory and formulary review. Biological products are not treated as NDA-to-ANDA switches in Enterprise.
+Alternatives must share the exact CodeRx clinical drug and have active/prescribable package and drug records. When optional Enterprise marketing metadata is available and enabled, known marketing categories must be NDA for current brands and ANDA for generic alternatives. Generic alternatives must also have valid known marketing dates at the assessment date. Current brand exposure follows estimated on-hand supply, so a brand marketing end date does not itself erase an existing fill. A missing category uses the brand/nonbrand baseline; generic alternatives still respect known marketing dates. The screening fields expose that limitation. When optional marketing columns are absent or enrichment is disabled, the baseline uses active brand/nonbrand comparators without regulatory screening. `brand_screening_basis`, `generic_screening_basis` and `marketing_screening_applied_flag` identify which rules were applied. The opportunity-level marketing flag is 1 only when both the brand and all catalog alternatives used marketing screening. Neither is an Orange Book therapeutic-equivalence determination; substitution requires clinical, regulatory and formulary review. Biological products are not treated as NDA-to-ANDA switches when regulatory screening is applied.
 
 For a priced estimate, require positive payer-paid brand and generic claims, positive quantity, matching source, payer, plan, clinical product, and quantity per supply day within 0.01. The generic benchmark is the median paid price per unit across currently available generic NDC claims in the last 90 days, with at least three claims and two people. Null payer/plan values match only null values. Unpriced availability remains visible and estimated savings remain null, not zero.
 
@@ -118,6 +161,10 @@ For a priced estimate, require positive payer-paid brand and generic claims, pos
 - Generic paid per 30 days = brand quantity / days supply × 30 × median generic payer-paid per unit.
 - Estimated savings per 30 days = max(brand minus generic, 0).
 - Annualized savings = daily savings × 365, assuming the current dose, continuation and prices for a full year.
+
+Financial outputs are rounded independently to cents from the underlying daily
+amounts. Do not reconstruct annual savings from an already-rounded 30-day
+amount.
 
 `brand_generic_summary` produces `brand_drug`, `generic_alternative`, `patients_who_could_switch`, priced/unpriced patient counts, and annual savings. `annual_savings_if_all_switched` is null unless every candidate is priced. `annual_savings_for_priced_patients` is an explicitly partial subtotal when prices are missing. One generic clinical product represents its potentially many generic NDCs; alternatives do not multiply patients or dollars.
 
@@ -135,7 +182,10 @@ Conditions recover missing ingestion metadata through source/person/claim joins 
 
 | Variable | Default |
 | --- | --- |
-| `use_coderx_enterprise` | `false` (native YAML boolean) |
+| `use_coderx_enterprise` | `false` (native YAML boolean; same choice as Core) |
+| `drugs_enable_enterprise_enrichment` | `true` (native YAML boolean; uses optional paid metadata when present) |
+| `drugs_data_asset_version` | `1.0.0` |
+| `drugs_coderx_database` / `drugs_coderx_schema` | dbt target database / `coderx`; advanced Enterprise source overrides |
 | `drugs_as_of_date` | `null` = today's date |
 | `drugs_episode_gap_days` | `30` |
 | `drugs_stockpile_early_refills` | `false` (native YAML boolean) |
@@ -148,27 +198,51 @@ Conditions recover missing ingestion metadata through source/person/claim joins 
 | `drugs_generic_lookback_days` | `90` |
 | `drugs_generic_min_claims` / `drugs_generic_min_people` | `3` / `2` |
 
-Core and Open terminology default to `target.database`, schemas `core` and `terminology`. Enterprise defaults to the Core database and `terminology`, with `coderx_enterprise_` prefix; override `drugs_coderx_database`, `drugs_coderx_schema`, and `drugs_coderx_table_prefix` as needed. Both modes use CodeRx `drugs`, `packages`, and `classes`, plus the public RxNorm ingredient bridge below. Enterprise additionally uses `ingredients` to extend historical coverage and improves regulatory availability checks and descriptive enrichment. Its indication table is deliberately not required for these condition mappings.
+## Terminology capabilities
+
+All four use cases run with the three CodeRx Open assets supplied by Core and
+the package's public RxNorm ingredient bridge. Selecting Enterprise routes the
+three base tables to the target database's `coderx` schema, matching Core's default sources. Advanced `drugs_coderx_database` and `drugs_coderx_schema` overrides change the Drugs input location only; keep them aligned with the terminology used to build Core. Missing paid base relations cause
+a failure; unmatched paid records do not silently fall back to Open.
+
+`drugs_enable_enterprise_enrichment: true` allows the package to use optional
+Enterprise drug descriptions, ingredient relationships and marketing metadata
+when available. Set it to `false` to use the paid base tables without those
+additional fields. An absent optional table or column leaves baseline
+analytics available and is recorded in `drugs.terminology_status`:
+
+| `capability_status` | Meaning |
+| --- | --- |
+| `open_baseline` | Core's Open assets and the public ingredient bridge |
+| `enterprise_enrichment_disabled` | Paid base tables selected; optional enrichment explicitly off |
+| `enterprise_base_only` | Paid base tables available without optional enrichment |
+| `enterprise_partially_enriched` | Some optional Enterprise capabilities available |
+| `enterprise_enriched` | All supported optional capabilities available |
+
+The table includes separate flags for drug details, ingredient relationships
+and marketing checks. Review these flags and `generic_alternative` screening
+fields before comparing results across installations. Enterprise indications
+are not required for the seven condition mappings, which use versioned ATC
+rules; these rules do not infer an individual patient's prescribing indication.
 
 ## Public ingredient terminology
 
-CodeRx Open does not include ingredient relationships. Both modes therefore use an auditable public-domain bridge from [NLM RxNorm Current Prescribable Content](https://www.nlm.nih.gov/research/umls/rxnorm/docs/prescribe.html). It requires no UMLS license. The current RxNorm IN map is preferred; Enterprise supplies atomic ingredient mappings for historical drug concepts missing from that subset. Original clinical-product supply intervals are unchanged.
+Both modes use a package-owned bridge derived from
+[NLM RxNorm Current Prescribable Content](https://www.nlm.nih.gov/research/umls/rxnorm/docs/prescribe.html).
+It maps drug concepts to atomic RxNorm IN ingredients. The public map is
+preferred; optional Enterprise ingredients can extend historical concept
+coverage. Unmapped concepts remain visible in `episode_mapping_quality`.
 
-Download a **dated Current Prescribable Content** ZIP from [NLM](https://www.nlm.nih.gov/research/umls/rxnorm/docs/rxnormfiles.html), then run:
-
-```sh
-python scripts/build_rxnorm_ingredient_map.py \
-  --zip RxNorm_full_prescribe_MMDDYYYY.zip \
-  --release-date YYYY-MM-DD --output rxnorm_drug_ingredient.parquet
-```
-
-The script requires PyArrow (included with the tested Databricks environment). Load its output into `terminology.rxnorm_drug_ingredient` before building. The bridge columns are `drug_id`, `ingredient_id`, `ingredient_name`, `source_release_date`, and `mapping_source`. Store the dated snapshot and generated checksum metadata; point a stable view at the selected release. Override `drugs_rxnorm_database`, `drugs_rxnorm_schema`, and `drugs_rxnorm_ingredient_table` when needed.
-
-The parser follows only ingredient/component/pack/brand-to-clinical relations and resolves precise ingredients to IN concepts; it does not infer ingredients from names. Missing or retired unmappable concepts stay visible in quality counts. No licensed CodeRx content is copied into the public bridge or repository.
+`drugs_data_asset_version` selects one pinned package data-asset snapshot,
+independently of the Drugs code version and Core's data-asset version.
+Maintainers own source acquisition, transformation and publication; users load
+the released bridge through the package build. No licensed CodeRx content is
+included in the public bridge. Changing the selected snapshot requires
+reloading its seed and rebuilding dependent models.
 
 ## Validation and contributions
 
-Run `dbt build --select package:drugs` in a nonproduction schema. Native dbt unit fixtures cover gap tolerances, early fill overlap/carryover, source isolation, uncertainty, current refill boundaries and prospective savings. Data tests enforce grains, Core row and paid reconciliation, episode coverage arithmetic and worklist/savings invariants. Run the same build with both `use_coderx_enterprise: false` and `true`. CI checks that both configurations parse; warehouse execution is required for behavioral tests.
+Run `dbt build --select package:drugs` in a nonproduction schema. Native dbt unit fixtures cover gap tolerances, early fill overlap/carryover, source isolation, uncertainty, current refill boundaries and prospective savings. Data tests enforce grains, Core row and paid reconciliation, episode coverage arithmetic and worklist/savings invariants. Validate Open, paid base-only and paid enriched configurations against the same Core input. Parsing is a configuration check; warehouse builds and their unit/data tests establish runtime behavior. Review actual test and notebook execution evidence for the code revision being adopted.
 
 The initial release excludes general adherence/PDC scoring, polypharmacy support, drug interactions, broad indication inference and spend decomposition. Archived prototype outputs are not part of this package.
 
@@ -186,3 +260,21 @@ The mapping scope was informed by these primary sources; the package does not im
 
 - [AHA/ACC/HFSA heart failure guideline 2022](https://doi.org/10.1161/CIR.0000000000001063).
 - [ACC/AHA AFib guideline 2023](https://www.jacc.org/doi/10.1016/j.jacc.2023.08.017).
+
+## Migrating from 0.2
+
+The 1.0 contract changes installation, terminology sources and public assets.
+Install Core in the root project, remove the former Core-source overrides and
+manual ingredient-source setup, and use the configuration above. Rebuild the
+full mart rather than mixing old tables with new worklists.
+
+Episode, condition-assessment and brand-opportunity IDs are regenerated using
+Core's stable, collision-safe ID convention. Do not assume that an identifier
+from 0.2 will match its 1.0 counterpart. Refresh downstream extracts and joins
+that persist these IDs. Natural source/patient/drug or condition keys remain
+the basis for comparing the two builds.
+
+The refill denominator now explicitly excludes known deceased patients and
+sources without an observed pharmacy feed. Percentages may change from prior
+reports that used every assessed patient. Review the denominator and unknown
+counts alongside the flagged worklist.

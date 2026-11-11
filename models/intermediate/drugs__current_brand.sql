@@ -5,8 +5,10 @@ with current_products as (
  where {{ drugs_as_of() }} between f.supply_start_date and f.supply_end_date
  and m.clinical_drug_id is not null
 )
-select * from current_products b where current_rank=1 and brand_flag=1
-{% if drugs_enterprise() %}and upper(marketing_category) like 'NDA%'{% endif %}
+select *,case when coalesce(marketing_screening_applied_flag,0)=1
+              then 'enterprise_nda_category' else 'brand_flag' end as brand_screening_basis
+from current_products b where current_rank=1 and brand_flag=1
+and (coalesce(marketing_screening_applied_flag,0)=0 or upper(marketing_category) like 'NDA%')
 -- An overlapping newer generic or unknown-duration fill may represent a switch.
 -- Do not count an earlier brand as a current saving opportunity in that case.
 and not exists(select 1 from {{ ref('drugs__medication') }} n where n.person_id=b.person_id and n.data_source=b.data_source

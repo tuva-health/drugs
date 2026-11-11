@@ -1,0 +1,4 @@
+person_id,data_source,drug_code,episode_number,start_date,end_date,fill_count,covered_days,uncovered_days
+sc_episode_boundary,scenario_clinical,29046,1,2026-01-01,2026-04-19,3,79,30
+sc_episode_boundary,scenario_clinical,29046,2,2026-05-21,2026-06-19,1,30,0
+sc_episode_boundary,scenario_other,29046,1,2026-11-01,2026-11-30,1,30,0

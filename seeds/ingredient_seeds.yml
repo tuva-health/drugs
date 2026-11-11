@@ -1,0 +1,29 @@
+version: 2
+seeds:
+  - name: drugs__rxnorm_drug_ingredient
+    description: Versioned public RxNorm ingredient bridge owned by Drugs.
+    config:
+      schema: |
+        {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
+      alias: _terminology_rxnorm_drug_ingredient
+      column_types:
+        drug_id: "{{ 'string' if target.type in ('bigquery', 'databricks') else 'varchar(256)' }}"
+        ingredient_id: "{{ 'string' if target.type in ('bigquery', 'databricks') else 'varchar(256)' }}"
+        ingredient_name: "{{ 'string' if target.type in ('bigquery', 'databricks') else 'varchar(3000)' }}"
+        source_release_date: date
+        mapping_source: "{{ 'string' if target.type in ('bigquery', 'databricks') else 'varchar(256)' }}"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [drug_id, ingredient_id]
+    columns:
+      - name: drug_id
+        data_tests: [not_null]
+      - name: ingredient_id
+        data_tests: [not_null]
+      - name: ingredient_name
+        data_tests: [not_null]
+      - name: source_release_date
+        data_tests: [not_null]
+      - name: mapping_source
+        data_tests: [not_null]

@@ -1,0 +1,348 @@
+version: 2
+unit_tests:
+  - name: drugs_open_packages_need_only_core_open_fields
+    model: drugs__stg_packages
+    overrides:
+      vars:
+        use_coderx_enterprise: false
+        drugs_enable_enterprise_enrichment: true
+    given:
+      - input: ref('terminology__coderx_packages')
+        format: sql
+        rows: |
+          select '00000000001' as ndc11, '100' as drug_id,
+                 'false' as is_brand, 'true' as active, 'true' as prescribable
+    expect:
+      rows:
+        - ndc_code: '00000000001'
+          brand_flag: 0
+          enterprise_marketing_enabled_flag: 0
+          marketing_screening_applied_flag: 0
+          marketing_category: null
+
+  - name: drugs_enterprise_minimal_packages_keep_base_behavior
+    model: drugs__stg_packages
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+      macros:
+        drugs_has_enterprise_marketing_columns: false
+    given:
+      - input: source('coderx_enterprise', 'packages')
+        format: sql
+        rows: |
+          select '00000000001' as ndc11, '100' as drug_id,
+                 false as is_brand, true as active, true as prescribable
+    expect:
+      rows:
+        - ndc_code: '00000000001'
+          brand_flag: 0
+          enterprise_marketing_enabled_flag: 0
+          marketing_screening_applied_flag: 0
+          marketing_category: null
+
+  - name: drugs_enterprise_marketing_metadata_is_optional_and_parsed
+    model: drugs__stg_packages
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+      macros:
+        drugs_has_enterprise_marketing_columns: true
+    given:
+      - input: source('coderx_enterprise', 'packages')
+        format: sql
+        rows: |
+          select '00000000001' as ndc11, '100' as drug_id,
+                 false as is_brand, true as active, true as prescribable,
+                 'ANDA' as marketing_category, '20200101' as start_marketing_date,
+                 cast(null as varchar) as end_marketing_date
+          union all
+          select '00000000002', '101', false, true, true,
+                 null, null, null
+          union all
+          select '00000000003', '102', false, true, true,
+                 'ANDA', '20261399', null
+    expect:
+      rows:
+        - ndc_code: '00000000001'
+          enterprise_marketing_enabled_flag: 1
+          marketing_screening_applied_flag: 1
+          marketing_dates_valid_flag: 1
+          start_marketing_date: '2020-01-01'
+        - ndc_code: '00000000002'
+          enterprise_marketing_enabled_flag: 1
+          marketing_screening_applied_flag: 0
+          marketing_dates_valid_flag: 1
+          start_marketing_date: null
+        - ndc_code: '00000000003'
+          enterprise_marketing_enabled_flag: 1
+          marketing_screening_applied_flag: 1
+          marketing_dates_valid_flag: 0
+          start_marketing_date: null
+
+  - name: drugs_enterprise_enrichment_off_ignores_extra_package_fields
+    model: drugs__stg_packages
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: false
+      macros:
+        drugs_has_enterprise_marketing_columns: true
+    given:
+      - input: source('coderx_enterprise', 'packages')
+        format: sql
+        rows: |
+          select '00000000001' as ndc11, '100' as drug_id,
+                 false as is_brand, true as active, true as prescribable,
+                 'BLA' as marketing_category, '20200101' as start_marketing_date,
+                 cast(null as varchar) as end_marketing_date
+    expect:
+      rows:
+        - ndc_code: '00000000001'
+          enterprise_marketing_enabled_flag: 0
+          marketing_screening_applied_flag: 0
+          marketing_category: null
+
+  - name: drugs_enterprise_minimal_drugs_keep_clinical_product_identity
+    model: drugs__stg_drugs
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+      macros:
+        drugs_has_enterprise_drug_columns: false
+    given:
+      - input: source('coderx_enterprise', 'drugs')
+        format: sql
+        rows: |
+          select '100' as drug_id, 'Example product' as drug_name,
+                 '200' as clinical_drug_id, 'Example clinical product' as clinical_drug_name,
+                 true as is_brand, true as active, true as prescribable
+    expect:
+      rows:
+        - drug_id: '100'
+          clinical_drug_id: '200'
+          ingredient_id: null
+          enterprise_drug_details_enabled_flag: 0
+          terminology_tier: enterprise
+
+  - name: drugs_enterprise_drug_details_are_used_when_present
+    model: drugs__stg_drugs
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+      macros:
+        drugs_has_enterprise_drug_columns: true
+    given:
+      - input: source('coderx_enterprise', 'drugs')
+        format: sql
+        rows: |
+          select '100' as drug_id, 'Example product' as drug_name,
+                 '200' as clinical_drug_id, 'Example clinical product' as clinical_drug_name,
+                 true as is_brand, true as active, true as prescribable,
+                 '300' as ingredient_id, 'Example ingredient' as ingredient_name,
+                 'Tablet' as dose_form_name
+    expect:
+      rows:
+        - drug_id: '100'
+          clinical_drug_id: '200'
+          ingredient_id: '300'
+          ingredient_name: Example ingredient
+          enterprise_drug_details_enabled_flag: 1
+
+  - name: drugs_public_ingredient_bridge_is_sufficient_without_optional_table
+    model: drugs__stg_ingredient
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+      macros:
+        drugs_has_enterprise_ingredient_columns: false
+    given:
+      - input: ref('drugs__rxnorm_drug_ingredient')
+        format: sql
+        rows: |
+          select '100' as drug_id, '300' as ingredient_id, 'Public ingredient' as ingredient_name
+      - input: source('coderx_enterprise', 'ingredients')
+        format: sql
+        rows: |
+          select '999' as drug_id, '888' as ingredient_component_id,
+                 'Must not be used' as ingredient_component_name, 'IN' as ingredient_component_type
+    expect:
+      rows:
+        - drug_id: '100'
+          ingredient_id: '300'
+          ingredient_name: Public ingredient
+          mapping_source: rxnorm_prescribable
+
+  - name: drugs_enterprise_ingredients_extend_without_replacing_public_mappings
+    model: drugs__stg_ingredient
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+      macros:
+        drugs_has_enterprise_ingredient_columns: true
+    given:
+      - input: ref('drugs__rxnorm_drug_ingredient')
+        format: sql
+        rows: |
+          select '100' as drug_id, '300' as ingredient_id, 'Public ingredient' as ingredient_name
+      - input: source('coderx_enterprise', 'ingredients')
+        format: sql
+        rows: |
+          select '100' as drug_id, '301' as ingredient_component_id,
+                 'Do not replace public' as ingredient_component_name, 'IN' as ingredient_component_type
+          union all select '200', '400', 'Historical ingredient', 'IN'
+          union all select '200', '400', 'Historical ingredient', 'IN'
+          union all select '500', '600', 'Precise ingredient is not atomic IN', 'PIN'
+    expect:
+      rows:
+        - drug_id: '100'
+          ingredient_id: '300'
+          ingredient_name: Public ingredient
+          mapping_source: rxnorm_prescribable
+        - drug_id: '200'
+          ingredient_id: '400'
+          ingredient_name: Historical ingredient
+          mapping_source: coderx_enterprise
+
+  - name: drugs_enterprise_ingredients_off_preserves_public_baseline
+    model: drugs__stg_ingredient
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: false
+      macros:
+        drugs_has_enterprise_ingredient_columns: true
+    given:
+      - input: ref('drugs__rxnorm_drug_ingredient')
+        format: sql
+        rows: |
+          select '100' as drug_id, '300' as ingredient_id, 'Public ingredient' as ingredient_name
+      - input: source('coderx_enterprise', 'ingredients')
+        format: sql
+        rows: |
+          select '200' as drug_id, '400' as ingredient_component_id,
+                 'Historical ingredient' as ingredient_component_name, 'IN' as ingredient_component_type
+    expect:
+      rows:
+        - drug_id: '100'
+          ingredient_id: '300'
+          mapping_source: rxnorm_prescribable
+
+  - name: drugs_generic_screening_uses_available_metadata_without_losing_baseline
+    model: drugs__generic_alternative
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+        drugs_as_of_date: '2026-10-26'
+    given:
+      - input: ref('drugs__stg_drugs')
+        rows:
+          - {drug_id: '100', drug_name: Example generic, clinical_drug_id: '200', clinical_drug_name: Example product, active_flag: 1, prescribable_flag: 1}
+      - input: ref('drugs__stg_packages')
+        rows:
+          - {ndc_code: baseline, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 0, marketing_screening_applied_flag: 0}
+          - {ndc_code: anda, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: ANDA, marketing_dates_valid_flag: 1, start_marketing_date: '2020-01-01'}
+          - {ndc_code: non_anda, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: BLA, marketing_dates_valid_flag: 1}
+          - {ndc_code: invalid_date, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: ANDA, marketing_dates_valid_flag: 0}
+          - {ndc_code: future, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: ANDA, marketing_dates_valid_flag: 1, start_marketing_date: '2027-01-01'}
+          - {ndc_code: missing_category, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 0, marketing_dates_valid_flag: 1}
+          - {ndc_code: missing_category_future, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 0, marketing_dates_valid_flag: 1, start_marketing_date: '2027-01-01'}
+          - {ndc_code: ended, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: ANDA, marketing_dates_valid_flag: 1, end_marketing_date: '2025-01-01'}
+    expect:
+      rows:
+        - {generic_ndc_code: baseline, generic_screening_basis: active_product_flags, alternative_basis: active_nonbrand_same_clinical_drug}
+        - {generic_ndc_code: anda, generic_screening_basis: enterprise_marketing_metadata, alternative_basis: active_anda_same_clinical_drug}
+        - {generic_ndc_code: missing_category, generic_screening_basis: active_product_flags, alternative_basis: active_nonbrand_same_clinical_drug}
+
+  - name: drugs_status_distinguishes_open_baseline
+    model: drugs__terminology_status
+    overrides:
+      vars:
+        use_coderx_enterprise: false
+        drugs_enable_enterprise_enrichment: true
+    given: []
+    expect:
+      rows:
+        - {terminology_tier: open, capability_status: open_baseline, enterprise_drug_details_enabled_flag: 0, enterprise_ingredients_enabled_flag: 0, enterprise_marketing_enabled_flag: 0}
+
+  - name: drugs_status_distinguishes_minimal_enterprise
+    model: drugs__terminology_status
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+      macros:
+        drugs_has_enterprise_drug_columns: false
+        drugs_has_enterprise_ingredient_columns: false
+        drugs_has_enterprise_marketing_columns: false
+    given: []
+    expect:
+      rows:
+        - {terminology_tier: enterprise, capability_status: enterprise_base_only, enterprise_drug_details_enabled_flag: 0, enterprise_ingredients_enabled_flag: 0, enterprise_marketing_enabled_flag: 0}
+
+  - name: drugs_status_distinguishes_full_enterprise
+    model: drugs__terminology_status
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+      macros:
+        drugs_has_enterprise_drug_columns: true
+        drugs_has_enterprise_ingredient_columns: true
+        drugs_has_enterprise_marketing_columns: true
+    given: []
+    expect:
+      rows:
+        - {terminology_tier: enterprise, capability_status: enterprise_enriched, enterprise_drug_details_enabled_flag: 1, enterprise_ingredients_enabled_flag: 1, enterprise_marketing_enabled_flag: 1}
+
+  - name: drugs_status_distinguishes_disabled_enrichment
+    model: drugs__terminology_status
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: false
+      macros:
+        drugs_has_enterprise_drug_columns: true
+        drugs_has_enterprise_ingredient_columns: true
+        drugs_has_enterprise_marketing_columns: true
+    given: []
+    expect:
+      rows:
+        - {terminology_tier: enterprise, capability_status: enterprise_enrichment_disabled, enterprise_drug_details_enabled_flag: 0, enterprise_ingredients_enabled_flag: 0, enterprise_marketing_enabled_flag: 0}
+
+  - name: drugs_current_brand_keeps_minimal_enterprise_candidates
+    model: drugs__current_brand
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_enable_enterprise_enrichment: true
+        drugs_as_of_date: '2026-10-26'
+    given:
+      - input: ref('drugs__medication')
+        format: sql
+        rows: |
+          select 'baseline' as medication_id, 'p' as person_id, 's' as data_source,
+                 'c1' as clinical_drug_id, cast('2026-10-01' as date) as dispensing_date,
+                 1 as brand_flag, cast(null as varchar) as marketing_category,
+                 0 as marketing_screening_applied_flag, 'usable' as exposure_status
+          union all select 'nda', 'p', 's', 'c2', cast('2026-10-01' as date), 1, 'NDA', 1, 'usable'
+          union all select 'bla', 'p', 's', 'c3', cast('2026-10-01' as date), 1, 'BLA', 1, 'usable'
+      - input: ref('drugs__fill')
+        format: sql
+        rows: |
+          select 'baseline' as medication_id, 'p' as person_id, 's' as data_source,
+                 cast('2026-10-01' as date) as supply_start_date,
+                 cast('2026-10-30' as date) as supply_end_date
+          union all select 'nda', 'p', 's', cast('2026-10-01' as date), cast('2026-10-30' as date)
+          union all select 'bla', 'p', 's', cast('2026-10-01' as date), cast('2026-10-30' as date)
+    expect:
+      rows:
+        - {medication_id: baseline, brand_screening_basis: brand_flag}
+        - {medication_id: nda, brand_screening_basis: enterprise_nda_category}

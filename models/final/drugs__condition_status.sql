@@ -11,7 +11,8 @@ with conditions as (
  coalesce(c.condition_file_date,cast(c.condition_ingest_datetime as date)) as condition_freshness_date,
  case when c.condition_file_date is not null then 'file_date' when c.condition_ingest_datetime is not null then 'ingest_datetime' else 'unavailable' end as condition_freshness_basis,
  coalesce(m.prior_condition_fill_count,0) as prior_condition_fill_count,
- coalesce(m.active_condition_supply_flag,0) as active_condition_supply_flag,coalesce(m.unknown_duration_flag,0) as unknown_duration_flag,
+ coalesce(m.active_condition_supply_flag,0) as active_condition_supply_flag,
+ coalesce(m.active_maintenance_supply_flag,0) as active_maintenance_supply_flag,coalesce(m.unknown_duration_flag,0) as unknown_duration_flag,
  m.maintenance_supply_end_date,cast({{ dbt.dateadd('day',1,'m.maintenance_supply_end_date') }} as date) as estimated_refill_due_date,
  coalesce(m.maintenance_fill_dates,0) as maintenance_fill_dates,m.latest_maintenance_medication_id,m.latest_maintenance_drug_name,
  m.treatment_evidence_file_date,m.treatment_evidence_ingest_datetime
@@ -27,11 +28,11 @@ with conditions as (
  {{ dbt.datediff('estimated_refill_due_date','assessment_date','day') }} as days_overdue
  from facts
 )
-select {{ dbt_utils.generate_surrogate_key(['person_id','data_source','condition_code']) }} as condition_status_id,*,
+select {{ the_tuva_project.stable_id_hash(["'drugs_condition_status'",'person_id','data_source','condition_code']) }} as condition_status_id,*,
  cast(case when gap_status='potential_open_drug_gap' then 1 when gap_status like 'unable_to_assess%' then null else 0 end as {{ dbt.type_int() }}) as open_drug_gap_flag,
  cast(case when deceased_flag=1 then 0 when source_latest_fill_date is null or unknown_duration_flag=1 or recent_unmapped_drug_flag=1 then null
  when maintenance_fill_dates>={{ var('drugs_refill_min_fills') }}
  and days_overdue between -{{ var('drugs_refill_lookahead_days') }} and {{ var('drugs_refill_max_overdue_days') }}
- and (active_condition_supply_flag=0 or days_overdue<0) then 1 else 0 end as {{ dbt.type_int() }}) as needs_refill_flag,
+ and (active_maintenance_supply_flag=0 or days_overdue<0) then 1 else 0 end as {{ dbt.type_int() }}) as needs_refill_flag,
  case when prior_condition_fill_count=0 then 'no_prior_qualifying_claim' else 'prior_treatment_now_without_active_supply' end as gap_history
 from assessed

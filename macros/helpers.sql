@@ -7,7 +7,10 @@
 {% endmacro %}
 
 {% macro drugs_coderx(table) %}
-  {{ return(source('coderx_enterprise' if drugs_enterprise() else 'coderx_open', table)) }}
+  {% if drugs_enterprise() %}
+    {{ return(source('coderx_enterprise', table)) }}
+  {% endif %}
+  {{ return(ref('terminology__coderx_' ~ table)) }}
 {% endmacro %}
 
 {% macro drugs_flag(column) %}

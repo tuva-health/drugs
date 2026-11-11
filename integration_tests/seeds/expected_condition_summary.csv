@@ -1,0 +1,10 @@
+data_source,condition_code,assessed_patients,patients_with_open_gaps,patients_needing_refill,refill_denominator_patients,percent_needing_refill,gap_unassessable_patients,refill_unassessable_patients
+scenario_clinical,t2d,5,2,1,4,25,1,1
+scenario_clinical,htn,5,2,2,5,40,1,1
+scenario_clinical,cad,4,2,1,4,25,1,1
+scenario_clinical,copd,4,2,1,4,25,1,1
+scenario_clinical,asthma,5,2,2,5,40,1,1
+scenario_clinical,chf,5,2,1,5,20,1,1
+scenario_clinical,afib,4,2,1,4,25,1,1
+scenario_other,t2d,1,0,0,1,0,0,0
+scenario_no_rx,t2d,1,0,0,0,,1,1

@@ -1,0 +1,35 @@
+claim_id,person_id,data_source,condition_code,condition_name,diagnosis_code,claim_date
+dx_sc_t2d_current_t2d,sc_t2d_current,scenario_clinical,t2d,Type 2 Diabetes Mellitus,E119,2026-10-01
+dx_sc_t2d_never_t2d,sc_t2d_never,scenario_clinical,t2d,Type 2 Diabetes Mellitus,E119,2026-10-01
+dx_sc_t2d_overdue_t2d,sc_t2d_overdue,scenario_clinical,t2d,Type 2 Diabetes Mellitus,E119,2026-10-01
+dx_sc_t2d_uncertain_t2d,sc_t2d_uncertain,scenario_clinical,t2d,Type 2 Diabetes Mellitus,E119,2026-10-01
+dx_sc_htn_current_htn,sc_htn_current,scenario_clinical,htn,Hypertension,I10,2026-10-01
+dx_sc_htn_never_htn,sc_htn_never,scenario_clinical,htn,Hypertension,I10,2026-10-01
+dx_sc_htn_overdue_htn,sc_htn_overdue,scenario_clinical,htn,Hypertension,I10,2026-10-01
+dx_sc_htn_uncertain_htn,sc_htn_uncertain,scenario_clinical,htn,Hypertension,I10,2026-10-01
+dx_sc_cad_current_cad,sc_cad_current,scenario_clinical,cad,Coronary Artery Disease,I2510,2026-10-01
+dx_sc_cad_never_cad,sc_cad_never,scenario_clinical,cad,Coronary Artery Disease,I2510,2026-10-01
+dx_sc_cad_overdue_cad,sc_cad_overdue,scenario_clinical,cad,Coronary Artery Disease,I2510,2026-10-01
+dx_sc_cad_uncertain_cad,sc_cad_uncertain,scenario_clinical,cad,Coronary Artery Disease,I2510,2026-10-01
+dx_sc_copd_current_copd,sc_copd_current,scenario_clinical,copd,Chronic Obstructive Pulmonary Disease,J449,2026-10-01
+dx_sc_copd_never_copd,sc_copd_never,scenario_clinical,copd,Chronic Obstructive Pulmonary Disease,J449,2026-10-01
+dx_sc_copd_overdue_copd,sc_copd_overdue,scenario_clinical,copd,Chronic Obstructive Pulmonary Disease,J449,2026-10-01
+dx_sc_copd_uncertain_copd,sc_copd_uncertain,scenario_clinical,copd,Chronic Obstructive Pulmonary Disease,J449,2026-10-01
+dx_sc_asthma_current_asthma,sc_asthma_current,scenario_clinical,asthma,Asthma,J45909,2026-10-01
+dx_sc_asthma_never_asthma,sc_asthma_never,scenario_clinical,asthma,Asthma,J45909,2026-10-01
+dx_sc_asthma_overdue_asthma,sc_asthma_overdue,scenario_clinical,asthma,Asthma,J45909,2026-10-01
+dx_sc_asthma_uncertain_asthma,sc_asthma_uncertain,scenario_clinical,asthma,Asthma,J45909,2026-10-01
+dx_sc_chf_current_chf,sc_chf_current,scenario_clinical,chf,Heart Failure,I509,2026-10-01
+dx_sc_chf_never_chf,sc_chf_never,scenario_clinical,chf,Heart Failure,I509,2026-10-01
+dx_sc_chf_overdue_chf,sc_chf_overdue,scenario_clinical,chf,Heart Failure,I509,2026-10-01
+dx_sc_chf_uncertain_chf,sc_chf_uncertain,scenario_clinical,chf,Heart Failure,I509,2026-10-01
+dx_sc_afib_current_afib,sc_afib_current,scenario_clinical,afib,Atrial Fibrillation and Flutter,I4891,2026-10-01
+dx_sc_afib_never_afib,sc_afib_never,scenario_clinical,afib,Atrial Fibrillation and Flutter,I4891,2026-10-01
+dx_sc_afib_overdue_afib,sc_afib_overdue,scenario_clinical,afib,Atrial Fibrillation and Flutter,I4891,2026-10-01
+dx_sc_afib_uncertain_afib,sc_afib_uncertain,scenario_clinical,afib,Atrial Fibrillation and Flutter,I4891,2026-10-01
+dx_sc_chf_hydralazine_chf,sc_chf_hydralazine,scenario_clinical,chf,Heart Failure,I509,2026-10-01
+dx_sc_asthma_rescue_asthma,sc_asthma_rescue,scenario_clinical,asthma,Asthma,J45909,2026-10-01
+dx_sc_htn_overlap_htn,sc_htn_overlap,scenario_clinical,htn,Hypertension,I10,2026-10-01
+dx_sc_t2d_deceased_t2d,sc_t2d_deceased,scenario_clinical,t2d,Type 2 Diabetes Mellitus,E119,2026-10-01
+dx_sc_t2d_overdue_t2d,sc_t2d_overdue,scenario_other,t2d,Type 2 Diabetes Mellitus,E119,2026-10-01
+dx_sc_t2d_no_feed_t2d,sc_t2d_no_feed,scenario_no_rx,t2d,Type 2 Diabetes Mellitus,E119,2026-10-01

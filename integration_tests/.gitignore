@@ -1,0 +1,2 @@
+# Local dependency resolution can contain machine-specific absolute paths.
+package-lock.yml

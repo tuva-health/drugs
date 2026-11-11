@@ -1,9 +1,16 @@
 {{ config(alias='brand_generic_opportunity') }}
 with alternatives as (
- select clinical_drug_id,min(clinical_drug_name) as generic_alternative_name,count(*) as generic_ndc_count from {{ ref('drugs__generic_alternative') }} group by clinical_drug_id
+ select clinical_drug_id,min(clinical_drug_name) as generic_alternative_name,count(*) as generic_ndc_count,
+ case when min(coalesce(generic_screening_basis,'active_product_flags'))=max(coalesce(generic_screening_basis,'active_product_flags'))
+      then min(coalesce(generic_screening_basis,'active_product_flags')) else 'mixed_screening_basis' end as generic_screening_basis
+ from {{ ref('drugs__generic_alternative') }} group by clinical_drug_id
 ), assessed as (
  select b.person_id,b.data_source,b.medication_id,b.drug_name,b.clinical_drug_id,b.clinical_drug_name,b.ndc_code as brand_ndc_code,
- a.generic_alternative_name,
+ a.generic_alternative_name,a.generic_screening_basis,
+ coalesce(b.brand_screening_basis,'brand_flag') as brand_screening_basis,
+ cast(case when b.brand_screening_basis='enterprise_nda_category'
+                and a.generic_screening_basis='enterprise_marketing_metadata'
+           then 1 else 0 end as {{ dbt.type_int() }}) as marketing_screening_applied_flag,
  b.payer,b.plan,b.dispensing_date,b.days_supply,b.quantity,b.paid_amount,b.supply_end_date,
  b.file_date as brand_file_date,b.ingest_datetime as brand_ingest_datetime,
  coalesce(a.generic_ndc_count,0) as generic_ndc_count,case when a.generic_ndc_count>0 then 1 else 0 end as generic_available_flag,
@@ -20,10 +27,10 @@ with alternatives as (
  left join {{ ref('drugs__generic_benchmark') }} g on b.person_id=g.person_id and b.data_source=g.data_source and b.clinical_drug_id=g.clinical_drug_id
  where p.deceased_flag=0
 )
-select {{ dbt_utils.generate_surrogate_key(['person_id','data_source','clinical_drug_id']) }} as opportunity_id,*,
- case when pricing_status='priced_for_review' then paid_amount/days_supply*30 end as brand_paid_per_30_days,
- case when pricing_status='priced_for_review' then quantity/days_supply*30*generic_paid_per_unit end as generic_paid_per_30_days,
- case when pricing_status='priced_for_review' then greatest(0,(paid_amount-quantity*generic_paid_per_unit)/days_supply*30) end as estimated_savings_per_30_days,
- case when pricing_status='priced_for_review' then greatest(0,(paid_amount-quantity*generic_paid_per_unit)/days_supply*365) end as estimated_annual_savings,
+select {{ the_tuva_project.stable_id_hash(["'drugs_brand_generic_opportunity'",'person_id','data_source','clinical_drug_id']) }} as opportunity_id,*,
+ case when pricing_status='priced_for_review' then round(paid_amount/days_supply*30,2) end as brand_paid_per_30_days,
+ case when pricing_status='priced_for_review' then round(quantity/days_supply*30*generic_paid_per_unit,2) end as generic_paid_per_30_days,
+ case when pricing_status='priced_for_review' then round(greatest(0,(paid_amount-quantity*generic_paid_per_unit)/days_supply*30),2) end as estimated_savings_per_30_days,
+ case when pricing_status='priced_for_review' then round(greatest(0,(paid_amount-quantity*generic_paid_per_unit)/days_supply*365),2) end as estimated_annual_savings,
  '365 days at current utilization and observed payer-paid prices; before rebates; equivalence and coverage review required' as savings_basis
 from assessed

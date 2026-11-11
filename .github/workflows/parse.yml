@@ -6,12 +6,26 @@ jobs:
     strategy:
       matrix:
         enterprise: [false, true]
+    defaults:
+      run:
+        working-directory: drugs/integration_tests
+    env:
+      TUVA_CORE_PATH: ${{ github.workspace }}/tuva-core
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: drugs
+      - uses: actions/checkout@v4
+        with:
+          repository: tuva-health/tuva-core
+          ref: 599e953e10fba61352bfb6e7d64c2a9b58335fb1
+          path: tuva-core
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -r requirements-databricks.txt
+      - run: pip install -r ../requirements-snowflake.txt
       - run: dbt deps
       - run: >-
-          dbt parse --no-partial-parse --profiles-dir ci --vars '{"use_coderx_enterprise": ${{ matrix.enterprise }}}'
+          dbt parse --no-partial-parse --profiles-dir ../ci --vars '{"use_coderx_enterprise": ${{ matrix.enterprise }}, "tuva_schema_prefix": "ci"}'
+      - run: python ../ci/check_manifest_schema.py target/manifest.json --schema ci_drugs
+      - run: python ../ci/check_quoted_boolean.py --enterprise '${{ matrix.enterprise }}'

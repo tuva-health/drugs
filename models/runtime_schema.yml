@@ -1,0 +1,75 @@
+version: 2
+models:
+  - name: drugs__terminology_status
+    config:
+      schema: |
+        {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
+    description: >-
+      One row describing the terminology source and optional enrichments used
+      for this build. Missing Enterprise extras preserve baseline workflows.
+    columns:
+      - name: assessment_date
+        description: Clinical assessment date for this mart build, not a historical warehouse snapshot.
+        data_tests: [not_null]
+      - name: terminology_tier
+        description: Open Core assets or explicitly selected paid Enterprise base tables. Missing paid base tables never silently fall back to Open.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [open, enterprise]
+      - name: capability_status
+        description: Distinguishes the Open baseline, disabled extras, and available Enterprise enrichments.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [open_baseline, enterprise_enrichment_disabled, enterprise_base_only, enterprise_partially_enriched, enterprise_enriched]
+      - name: enterprise_drug_details_enabled_flag
+        description: 1 when optional ingredient and dose-form descriptions are enabled and their columns are available.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: enterprise_ingredients_enabled_flag
+        description: 1 when the optional Enterprise atomic-ingredient relation is enabled and available.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: enterprise_marketing_enabled_flag
+        description: 1 when optional package marketing columns are enabled and available; individual rows may still lack a category.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: public_ingredient_asset_version
+        description: Package-owned public ingredient bridge version used by the build.
+        data_tests: [not_null]
+  - name: drugs__condition_medication_summary
+    config:
+      schema: |
+        {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
+  - name: drugs__current_brand
+    config:
+      schema: |
+        {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
+  - name: drugs__episode_fill
+    config:
+      schema: |
+        {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
+  - name: drugs__generic_benchmark
+    config:
+      schema: |
+        {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
+  - name: drugs__medical_claim_lineage
+    config:
+      schema: |
+        {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
+  - name: drugs__stg_classes
+    config:
+      schema: |
+        {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}

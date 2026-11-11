@@ -1,43 +1,14 @@
 version: 2
 sources:
-- name: tuva_core
-  database: '{{ var(''drugs_core_database'', target.database) }}'
-  schema: '{{ var(''drugs_core_schema'', ''core'') }}'
-  tables:
-  - name: medication
-  - name: pharmacy_claim
-  - name: condition
-  - name: patient
-  - name: eligibility
-  - name: medical_claim
-- name: coderx_open
-  database: '{{ var(''drugs_core_database'', target.database) }}'
-  schema: '{{ var(''drugs_terminology_schema'', ''terminology'') }}'
-  tables:
-  - name: drugs
-    identifier: coderx_drugs
-  - name: packages
-    identifier: coderx_packages
-  - name: classes
-    identifier: coderx_classes
-- name: coderx_enterprise
-  database: '{{ var(''drugs_coderx_database'', var(''drugs_core_database'', target.database))
-    }}'
-  schema: '{{ var(''drugs_coderx_schema'', ''terminology'') }}'
-  tables:
-  - name: drugs
-    identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}drugs'
-  - name: packages
-    identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}packages'
-  - name: classes
-    identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}classes'
-  - name: ingredients
-    identifier: '{{ var(''drugs_coderx_table_prefix'', ''coderx_enterprise_'') }}ingredients'
-- name: rxnorm_open
-  database: '{{ var(''drugs_rxnorm_database'', var(''drugs_core_database'', target.database))
-    }}'
-  schema: '{{ var(''drugs_rxnorm_schema'', ''terminology'') }}'
-  tables:
-  - name: drug_ingredient
-    identifier: '{{ var(''drugs_rxnorm_ingredient_table'', ''rxnorm_drug_ingredient'')
-      }}'
+  - name: coderx_enterprise
+    description: >-
+      User-managed licensed CodeRx in the same fixed schema used by Tuva Core.
+      The three base relations are required only in Enterprise mode. Extra
+      fields and the ingredients relation are optional enrichments.
+    database: "{{ var('drugs_coderx_database', target.database) }}"
+    schema: "{{ var('drugs_coderx_schema', 'coderx') }}"
+    tables:
+      - name: packages
+      - name: drugs
+      - name: classes
+      - name: ingredients

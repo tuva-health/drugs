@@ -1,0 +1,878 @@
+# Regression cases for exact ingredients, refill evidence, and condition reporting.
+version: 2
+unit_tests:
+- name: ingredient_specific_condition_rules_do_not_broaden_atc_classes
+  model: drugs__drug_condition
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__stg_drugs')
+    rows:
+    - drug_id: ivabradine
+      clinical_drug_id: ivabradine
+      drug_name: ivabradine
+      clinical_drug_name: ivabradine
+    - drug_id: ivabradine_brand
+      clinical_drug_id: ivabradine
+      drug_name: ivabradine_brand
+      clinical_drug_name: ivabradine_brand
+    - drug_id: other_c01eb
+      clinical_drug_id: other_c01eb
+      drug_name: other_c01eb
+      clinical_drug_name: other_c01eb
+    - drug_id: hydralazine
+      clinical_drug_id: hydralazine
+      drug_name: hydralazine
+      clinical_drug_name: hydralazine
+    - drug_id: dihydralazine
+      clinical_drug_id: dihydralazine
+      drug_name: dihydralazine
+      clinical_drug_name: dihydralazine
+    - drug_id: dabigatran
+      clinical_drug_id: dabigatran
+      drug_name: dabigatran
+      clinical_drug_name: dabigatran
+    - drug_id: other_b01ae
+      clinical_drug_id: other_b01ae
+      drug_name: other_b01ae
+      clinical_drug_name: other_b01ae
+    - drug_id: unmapped_ivabradine
+      clinical_drug_id: null
+      drug_name: unmapped_ivabradine
+      clinical_drug_name: unmapped_ivabradine
+    - drug_id: wrong_atc
+      clinical_drug_id: wrong_atc
+      drug_name: wrong_atc
+      clinical_drug_name: wrong_atc
+    - drug_id: direct_precedence
+      clinical_drug_id: ivabradine
+      drug_name: direct_precedence
+      clinical_drug_name: direct_precedence
+    - drug_id: combination
+      clinical_drug_id: combination
+      drug_name: combination
+      clinical_drug_name: combination
+    - drug_id: broad_rule_without_mapping
+      clinical_drug_id: null
+      drug_name: broad_rule_without_mapping
+      clinical_drug_name: broad_rule_without_mapping
+  - input: ref('drugs__stg_classes')
+    rows:
+    - drug_id: ivabradine
+      atc_4_code: C01EB
+    - drug_id: ivabradine_brand
+      atc_4_code: C01EB
+    - drug_id: other_c01eb
+      atc_4_code: C01EB
+    - drug_id: hydralazine
+      atc_4_code: C02DB
+    - drug_id: dihydralazine
+      atc_4_code: C02DB
+    - drug_id: dabigatran
+      atc_4_code: B01AE
+    - drug_id: other_b01ae
+      atc_4_code: B01AE
+    - drug_id: unmapped_ivabradine
+      atc_4_code: C01EB
+    - drug_id: wrong_atc
+      atc_4_code: C07AA
+    - drug_id: direct_precedence
+      atc_4_code: C01EB
+    - drug_id: combination
+      atc_4_code: C02DB
+    - drug_id: broad_rule_without_mapping
+      atc_4_code: A10BK
+    - drug_id: ivabradine
+      atc_4_code: C01EB
+  - input: ref('drugs__stg_ingredient')
+    rows:
+    - drug_id: ivabradine
+      ingredient_id: '1649480'
+    - drug_id: ivabradine
+      ingredient_id: '1649480'
+    - drug_id: other_c01eb
+      ingredient_id: '999001'
+    - drug_id: hydralazine
+      ingredient_id: '5470'
+    - drug_id: dihydralazine
+      ingredient_id: '3409'
+    - drug_id: dabigatran
+      ingredient_id: '1037042'
+    - drug_id: other_b01ae
+      ingredient_id: '999002'
+    - drug_id: wrong_atc
+      ingredient_id: '1649480'
+    - drug_id: direct_precedence
+      ingredient_id: '999003'
+    - drug_id: combination
+      ingredient_id: '5470'
+    - drug_id: combination
+      ingredient_id: '999004'
+  - input: ref('drugs__condition_rule')
+    rows:
+    - rule_id: 1
+      rule_version: '2026-10-26'
+      condition_code: t2d
+      condition_name: Type 2 Diabetes Mellitus
+      atc_prefix: A10
+      drug_name_contains: null
+      refill_eligible_flag: 1
+      rule_note: Glucose-lowering medication; not a guideline-concordance measure
+      ingredient_rxcui: null
+    - rule_id: 48
+      rule_version: '2026-11-10'
+      condition_code: chf
+      condition_name: Heart Failure
+      atc_prefix: C01EB
+      drug_name_contains: null
+      refill_eligible_flag: 1
+      rule_note: Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+      ingredient_rxcui: '1649480'
+    - rule_id: 50
+      rule_version: '2026-11-10'
+      condition_code: chf
+      condition_name: Heart Failure
+      atc_prefix: C02DB
+      drug_name_contains: null
+      refill_eligible_flag: 1
+      rule_note: Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
+      ingredient_rxcui: '5470'
+    - rule_id: 58
+      rule_version: '2026-11-10'
+      condition_code: afib
+      condition_name: Atrial Fibrillation and Flutter
+      atc_prefix: B01AE
+      drug_name_contains: null
+      refill_eligible_flag: 1
+      rule_note: Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention
+        measure
+      ingredient_rxcui: '1037042'
+  expect:
+    rows:
+    - drug_id: ivabradine
+      condition_code: chf
+      refill_eligible_flag: 1
+    - drug_id: ivabradine_brand
+      condition_code: chf
+      refill_eligible_flag: 1
+    - drug_id: hydralazine
+      condition_code: chf
+      refill_eligible_flag: 1
+    - drug_id: dabigatran
+      condition_code: afib
+      refill_eligible_flag: 1
+    - drug_id: combination
+      condition_code: chf
+      refill_eligible_flag: 1
+    - drug_id: broad_rule_without_mapping
+      condition_code: t2d
+      refill_eligible_flag: 1
+- name: refill_evidence_follows_last_maintenance_coverage_with_stable_ties
+  model: drugs__condition_medication_summary
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__medication_condition')
+    rows:
+    - person_id: overlap
+      data_source: a
+      condition_code: asthma
+      medication_id: older_90_days
+      drug_name: older_90_days name
+      dispensing_date: '2026-08-01'
+      supply_end_date: '2026-10-29'
+      refill_eligible_flag: 1
+      exposure_status: usable
+      active_supply_flag: 1
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: overlap
+      data_source: a
+      condition_code: asthma
+      medication_id: newer_30_days
+      drug_name: newer_30_days name
+      dispensing_date: '2026-09-15'
+      supply_end_date: '2026-10-14'
+      refill_eligible_flag: 1
+      exposure_status: usable
+      active_supply_flag: 0
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: overlap
+      data_source: a
+      condition_code: asthma
+      medication_id: rescue
+      drug_name: rescue name
+      dispensing_date: '2026-10-25'
+      supply_end_date: '2026-11-23'
+      refill_eligible_flag: 0
+      exposure_status: usable
+      active_supply_flag: 1
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: overlap
+      data_source: b
+      condition_code: asthma
+      medication_id: other_source
+      drug_name: other_source name
+      dispensing_date: '2026-09-21'
+      supply_end_date: '2026-10-20'
+      refill_eligible_flag: 1
+      exposure_status: usable
+      active_supply_flag: 0
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: overlap
+      data_source: a
+      condition_code: htn
+      medication_id: other_condition
+      drug_name: other_condition name
+      dispensing_date: '2026-10-01'
+      supply_end_date: '2026-10-30'
+      refill_eligible_flag: 1
+      exposure_status: usable
+      active_supply_flag: 1
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: ties
+      data_source: a
+      condition_code: asthma
+      medication_id: older_same_end
+      drug_name: older_same_end name
+      dispensing_date: '2026-09-01'
+      supply_end_date: '2026-10-30'
+      refill_eligible_flag: 1
+      exposure_status: usable
+      active_supply_flag: 1
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: ties
+      data_source: a
+      condition_code: asthma
+      medication_id: tie_a
+      drug_name: tie_a name
+      dispensing_date: '2026-10-01'
+      supply_end_date: '2026-10-30'
+      refill_eligible_flag: 1
+      exposure_status: usable
+      active_supply_flag: 1
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: ties
+      data_source: a
+      condition_code: asthma
+      medication_id: tie_z
+      drug_name: tie_z name
+      dispensing_date: '2026-10-01'
+      supply_end_date: '2026-10-30'
+      refill_eligible_flag: 1
+      exposure_status: usable
+      active_supply_flag: 1
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: unknown
+      data_source: a
+      condition_code: asthma
+      medication_id: known_maintenance
+      drug_name: known_maintenance name
+      dispensing_date: '2026-09-21'
+      supply_end_date: '2026-10-20'
+      refill_eligible_flag: 1
+      exposure_status: usable
+      active_supply_flag: 0
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: unknown
+      data_source: a
+      condition_code: asthma
+      medication_id: recent_unknown
+      drug_name: recent_unknown name
+      dispensing_date: '2026-10-25'
+      supply_end_date: null
+      refill_eligible_flag: 1
+      exposure_status: missing_days_supply
+      active_supply_flag: 0
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: rescue_only
+      data_source: a
+      condition_code: asthma
+      medication_id: rescue_only
+      drug_name: rescue_only name
+      dispensing_date: '2026-10-25'
+      supply_end_date: '2026-11-23'
+      refill_eligible_flag: 0
+      exposure_status: usable
+      active_supply_flag: 1
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+  expect:
+    rows:
+    - person_id: overlap
+      data_source: a
+      condition_code: asthma
+      latest_maintenance_medication_id: older_90_days
+      latest_maintenance_drug_name: older_90_days name
+      maintenance_supply_end_date: '2026-10-29'
+      maintenance_fill_dates: 2
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 1
+      unknown_duration_flag: 0
+    - person_id: overlap
+      data_source: b
+      condition_code: asthma
+      latest_maintenance_medication_id: other_source
+      latest_maintenance_drug_name: other_source name
+      maintenance_supply_end_date: '2026-10-20'
+      maintenance_fill_dates: 1
+      active_condition_supply_flag: 0
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+    - person_id: overlap
+      data_source: a
+      condition_code: htn
+      latest_maintenance_medication_id: other_condition
+      latest_maintenance_drug_name: other_condition name
+      maintenance_supply_end_date: '2026-10-30'
+      maintenance_fill_dates: 1
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 1
+      unknown_duration_flag: 0
+    - person_id: ties
+      data_source: a
+      condition_code: asthma
+      latest_maintenance_medication_id: tie_z
+      latest_maintenance_drug_name: tie_z name
+      maintenance_supply_end_date: '2026-10-30'
+      maintenance_fill_dates: 2
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 1
+      unknown_duration_flag: 0
+    - person_id: unknown
+      data_source: a
+      condition_code: asthma
+      latest_maintenance_medication_id: known_maintenance
+      latest_maintenance_drug_name: known_maintenance name
+      maintenance_supply_end_date: '2026-10-20'
+      maintenance_fill_dates: 1
+      active_condition_supply_flag: 0
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 1
+    - person_id: rescue_only
+      data_source: a
+      condition_code: asthma
+      latest_maintenance_medication_id: null
+      latest_maintenance_drug_name: null
+      maintenance_supply_end_date: null
+      maintenance_fill_dates: 0
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+- name: refill_denominator_includes_uncertain_and_untreated_living_patients
+  model: drugs__condition_summary
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__condition_status')
+    rows:
+    - person_id: due
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: 1
+      open_drug_gap_flag: 1
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: unknown_exposure
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: null
+      open_drug_gap_flag: null
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: no_prior_fills
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: 0
+      open_drug_gap_flag: 1
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: deceased
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: 0
+      open_drug_gap_flag: 0
+      deceased_flag: 1
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: due
+      data_source: b
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: 1
+      open_drug_gap_flag: 1
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: no_feed
+      data_source: c
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: null
+      open_drug_gap_flag: null
+      deceased_flag: 0
+      source_latest_fill_date: null
+      outreach_readiness_status: current_record_review
+    - person_id: zero_flags
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: htn
+      condition_name: Hypertension
+      needs_refill_flag: 0
+      open_drug_gap_flag: 0
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+  expect:
+    rows:
+    - data_source: a
+      condition_code: asthma
+      assessed_patients: 4
+      patients_needing_refill: 1
+      refill_denominator_patients: 3
+      percent_needing_refill: 33.33
+      refill_unassessable_patients: 1
+    - data_source: b
+      condition_code: asthma
+      assessed_patients: 1
+      patients_needing_refill: 1
+      refill_denominator_patients: 1
+      percent_needing_refill: 100.0
+      refill_unassessable_patients: 0
+    - data_source: c
+      condition_code: asthma
+      assessed_patients: 1
+      patients_needing_refill: 0
+      refill_denominator_patients: 0
+      percent_needing_refill: null
+      refill_unassessable_patients: 1
+    - data_source: a
+      condition_code: htn
+      assessed_patients: 1
+      patients_needing_refill: 0
+      refill_denominator_patients: 1
+      percent_needing_refill: 0.0
+      refill_unassessable_patients: 0
+- name: maintenance_refill_windows_do_not_accept_rescue_as_replacement
+  model: drugs__condition_status
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+  given:
+  - input: ref('drugs__condition_evidence')
+    rows:
+    - condition_id: overdue_rescue_a_asthma
+      person_id: overdue_rescue
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: overdue_rescue_b_asthma
+      person_id: overdue_rescue
+      data_source: b
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: overdue_rescue_a_htn
+      person_id: overdue_rescue
+      data_source: a
+      condition_name: Hypertension
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: due_today_a_asthma
+      person_id: due_today
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: lookahead_edge_a_asthma
+      person_id: lookahead_edge
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: beyond_lookahead_a_asthma
+      person_id: beyond_lookahead
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: overdue_edge_a_asthma
+      person_id: overdue_edge
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: beyond_overdue_a_asthma
+      person_id: beyond_overdue
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: only_one_fill_a_asthma
+      person_id: only_one_fill
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: uncertain_a_asthma
+      person_id: uncertain
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: deceased_a_asthma
+      person_id: deceased
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+    - condition_id: missing_feed_c_asthma
+      person_id: missing_feed
+      data_source: c
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+  - input: ref('drugs__condition_rule')
+    rows:
+    - condition_code: asthma
+      condition_name: Asthma
+    - condition_code: htn
+      condition_name: Hypertension
+  - input: ref('drugs__patient_context')
+    rows:
+    - person_id: overdue_rescue
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: overdue_rescue
+      data_source: b
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: due_today
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: lookahead_edge
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: beyond_lookahead
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: overdue_edge
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: beyond_overdue
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: only_one_fill
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: uncertain
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: deceased
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 1
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+    - person_id: missing_feed
+      data_source: c
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: null
+  - input: ref('drugs__condition_medication_summary')
+    rows:
+    - person_id: overdue_rescue
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 3
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-10-20'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: overdue_rescue
+      data_source: b
+      condition_code: asthma
+      prior_condition_fill_count: 3
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 1
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-11-30'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: overdue_rescue
+      data_source: a
+      condition_code: htn
+      prior_condition_fill_count: 3
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 1
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-11-30'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: due_today
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 3
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-10-25'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: lookahead_edge
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 3
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 1
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-11-01'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: beyond_lookahead
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 3
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 1
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-11-02'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: overdue_edge
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 2
+      active_condition_supply_flag: 0
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-09-25'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: beyond_overdue
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 2
+      active_condition_supply_flag: 0
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-09-24'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: only_one_fill
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 2
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-10-25'
+      maintenance_fill_dates: 1
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: uncertain
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 2
+      active_condition_supply_flag: 0
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 1
+      maintenance_supply_end_date: '2026-10-25'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: deceased
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 2
+      active_condition_supply_flag: 0
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-10-25'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+    - person_id: missing_feed
+      data_source: c
+      condition_code: asthma
+      prior_condition_fill_count: 2
+      active_condition_supply_flag: 0
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-10-25'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+  expect:
+    rows:
+    - person_id: overdue_rescue
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: 0
+      needs_refill_flag: 1
+      estimated_refill_due_date: '2026-10-21'
+    - person_id: overdue_rescue
+      data_source: b
+      condition_code: asthma
+      open_drug_gap_flag: 0
+      needs_refill_flag: 0
+      estimated_refill_due_date: '2026-12-01'
+    - person_id: overdue_rescue
+      data_source: a
+      condition_code: htn
+      open_drug_gap_flag: 0
+      needs_refill_flag: 0
+      estimated_refill_due_date: '2026-12-01'
+    - person_id: due_today
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: 0
+      needs_refill_flag: 1
+      estimated_refill_due_date: '2026-10-26'
+    - person_id: lookahead_edge
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: 0
+      needs_refill_flag: 1
+      estimated_refill_due_date: '2026-11-02'
+    - person_id: beyond_lookahead
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: 0
+      needs_refill_flag: 0
+      estimated_refill_due_date: '2026-11-03'
+    - person_id: overdue_edge
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: 1
+      needs_refill_flag: 1
+      estimated_refill_due_date: '2026-09-26'
+    - person_id: beyond_overdue
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: 1
+      needs_refill_flag: 0
+      estimated_refill_due_date: '2026-09-25'
+    - person_id: only_one_fill
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: 0
+      needs_refill_flag: 0
+      estimated_refill_due_date: '2026-10-26'
+    - person_id: uncertain
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: null
+      needs_refill_flag: null
+      estimated_refill_due_date: '2026-10-26'
+    - person_id: deceased
+      data_source: a
+      condition_code: asthma
+      open_drug_gap_flag: 0
+      needs_refill_flag: 0
+      estimated_refill_due_date: '2026-10-26'
+    - person_id: missing_feed
+      data_source: c
+      condition_code: asthma
+      open_drug_gap_flag: null
+      needs_refill_flag: null
+      estimated_refill_due_date: '2026-10-26'

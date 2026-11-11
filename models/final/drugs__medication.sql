@@ -8,11 +8,14 @@ with primary_class as (
         c.payer,c.plan,c.dispensing_provider_id,c.prescribing_provider_id,
         c.paid_amount,c.refills as reported_refills,
         coalesce(c.ingest_datetime,m.ingest_datetime) as ingest_datetime,
-        {{ drugs_optional_column(source('tuva_core','pharmacy_claim'), 'file_date', 'c', 'date') }} as file_date,
+        {{ drugs_optional_column(ref('core__pharmacy_claim'), 'file_date', 'c', 'date') }} as file_date,
         c.member_month_id,
         p.drug_id,d.drug_name,d.clinical_drug_id,d.clinical_drug_name,
         d.ingredient_id,d.ingredient_name,d.dose_form_name,
         coalesce(p.brand_flag,d.brand_flag) as brand_flag,p.marketing_category,
+        coalesce(d.enterprise_drug_details_enabled_flag,0) as enterprise_drug_details_enabled_flag,
+        coalesce(p.enterprise_marketing_enabled_flag,0) as enterprise_marketing_enabled_flag,
+        coalesce(p.marketing_screening_applied_flag,0) as marketing_screening_applied_flag,
         d.terminology_tier,
         cl.atc_4_code as primary_atc_4_code,cl.atc_4_name as primary_atc_4_name,
         case when d.clinical_drug_id is not null then concat('clinical:',d.clinical_drug_id)
@@ -29,8 +32,8 @@ with primary_class as (
              when m.ndc_code is null then 'missing_drug_code'
              else 'usable' end as exposure_status,
         cast(case when p.drug_id is not null then 1 else 0 end as {{ dbt.type_int() }}) as terminology_matched_flag
- from {{ source('tuva_core','medication') }} m
- left join {{ source('tuva_core','pharmacy_claim') }} c
+ from {{ ref('core__medication') }} m
+ left join {{ ref('core__pharmacy_claim') }} c
    on m.medication_id=c.pharmacy_claim_id and m.data_source=c.data_source and m.person_id=c.person_id
  left join {{ ref('drugs__stg_packages') }} p on m.ndc_code=p.ndc_code
  left join {{ ref('drugs__stg_drugs') }} d on p.drug_id=d.drug_id

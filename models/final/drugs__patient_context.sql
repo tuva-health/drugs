@@ -1,16 +1,16 @@
 {{ config(alias='patient_context') }}
 with population as (
- select person_id,data_source from {{ source('tuva_core','patient') }}
+ select person_id,data_source from {{ ref('core__patient') }}
  union select person_id,data_source from {{ ref('drugs__medication') }}
  union select person_id,data_source from {{ ref('drugs__condition_evidence') }}
 ), demographics as (
  select person_id,data_source,max(case when death_flag=1 or death_date<={{ drugs_as_of() }} then 1 else 0 end) as deceased_flag
- from {{ source('tuva_core','patient') }} group by person_id,data_source
+ from {{ ref('core__patient') }} group by person_id,data_source
 ), eligibility as (
  select person_id,data_source,max(case when enrollment_start_date<={{ drugs_as_of() }} and (enrollment_end_date is null or enrollment_end_date>={{ drugs_as_of() }}) then 1 else 0 end) as currently_enrolled_flag,
- max({{ drugs_optional_column(source('tuva_core','eligibility'),'file_date','e','date') }}) as eligibility_file_date,
+ max({{ drugs_optional_column(ref('core__eligibility'),'file_date','e','date') }}) as eligibility_file_date,
  max(ingest_datetime) as eligibility_ingest_datetime
- from {{ source('tuva_core','eligibility') }} e group by person_id,data_source
+ from {{ ref('core__eligibility') }} e group by person_id,data_source
 ), rx as (
  select person_id,data_source,max(file_date) as patient_rx_file_date,max(ingest_datetime) as patient_rx_ingest_datetime,
  max(case when dispensing_date<={{ drugs_as_of() }} then dispensing_date end) as patient_latest_fill_date,
