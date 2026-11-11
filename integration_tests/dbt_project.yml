@@ -20,7 +20,6 @@ vars:
   enable_data_quality_failure_keys: false
   parity_enabled: false
   use_coderx_enterprise: false
-  drugs_enable_enterprise_enrichment: true
   synthetic_data_size: small
   tuva_core_data_asset_version: '1.0.0'
   tuva_schema_prefix: drugs_validation_20261110_open

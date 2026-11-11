@@ -12,6 +12,7 @@ select assessment_date,data_source,condition_code,condition_name,count(*) as ass
  sum(case when open_drug_gap_flag=1 and outreach_readiness_status='current_record_review' then 1 else 0 end) as current_record_gap_patients,
  sum(case when needs_refill_flag=1 and outreach_readiness_status='current_record_review' then 1 else 0 end) as current_record_refill_patients
 from {{ ref('drugs__condition_status') }}
+where {{ 1 if drugs_enterprise() else 0 }}=1
 group by assessment_date,data_source,condition_code,condition_name
 )
 select *,round(100.0*patients_needing_refill/nullif(refill_denominator_patients,0),2) as percent_needing_refill

@@ -22,9 +22,9 @@ models:
     data_tests:
     - not_null
   - name: enterprise_drug_details_enabled_flag
-    description: 1 when optional Enterprise drug detail columns are available and enabled.
+    description: 1 when Enterprise drug detail columns are available and enabled.
   - name: enterprise_marketing_enabled_flag
-    description: 1 when optional Enterprise package marketing columns are available and enabled.
+    description: 1 when Enterprise package marketing columns are available and enabled.
   - name: marketing_screening_applied_flag
     description: 1 when enabled marketing columns and a nonempty category are available for downstream screening. This medication-level flag does not confirm the product passed current-candidate checks.
   - name: person_id
@@ -49,8 +49,9 @@ models:
   config:
     schema: |
       {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: One source/person/atomic RxNorm ingredient episode, independent of
-    strength, form and brand. Combination fills contribute to each ingredient.
+  description: Enterprise-only source/person/atomic RxNorm ingredient episodes,
+    independent of strength, form and brand. Combination fills contribute to
+    each ingredient. The table retains its columns but is empty under Open.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -111,8 +112,8 @@ models:
   config:
     schema: |
       {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Unresolved recent Tuva-grouper diagnoses for the seven configured chronic
-    conditions, including claim-level provenance.
+  description: Enterprise-only unresolved recent Tuva-grouper diagnoses for the
+    seven configured conditions, including claim provenance. Empty under Open.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -219,8 +220,9 @@ models:
   config:
     schema: |
       {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Medication-to-condition evidence from versioned ATC rules; not a statement
-    of the actual prescribing indication.
+  description: Enterprise-only medication-to-condition evidence from versioned
+    CodeRx ATC and exact ingredient rules. Not the actual prescribing indication.
+    The table retains its columns but is empty under Open.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -242,8 +244,9 @@ models:
   config:
     schema: |
       {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: One current assessment per source/person/condition. Nullable flags
-    preserve unknown exposure status.
+  description: Enterprise-only current assessment per source/person/condition.
+    Nullable flags preserve unknown exposure. The table is empty under Open;
+    consult terminology_status before interpreting absence of rows.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -329,8 +332,9 @@ models:
   config:
     schema: |
       {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: 'Potential current gaps: recent condition evidence and no known active
-    qualifying supply. Unknown exposure is excluded.'
+  description: 'Enterprise-only potential current gaps: recent condition evidence
+    and no known active qualifying supply. Unknown exposure is excluded. Empty
+    under Open means the workflow is unavailable, not that the population has no gaps.'
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -367,8 +371,9 @@ models:
   config:
     schema: |
       {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Potential condition-level refill review for repeated maintenance fills
-    due soon or recently overdue, excluding uncertain exposure.
+  description: Enterprise-only condition-level refill review for repeated
+    maintenance fills due soon or recently overdue, excluding uncertain exposure.
+    Empty under Open means the workflow requires Enterprise.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -436,11 +441,11 @@ models:
     - not_null
   - name: generic_screening_basis
     description: active_product_flags for baseline status checks, or enterprise_marketing_metadata
-      when optional regulatory category and marketing dates are also applied.
+      when paid regulatory category and marketing dates are also applied.
   - name: enterprise_marketing_enabled_flag
-    description: 1 when optional Enterprise marketing metadata is available and enabled.
+    description: 1 when Enterprise marketing metadata is available and enabled.
   - name: marketing_screening_applied_flag
-    description: 1 when this generic alternative was screened using optional marketing metadata.
+    description: 1 when this generic alternative was screened using Enterprise marketing metadata.
   - name: clinical_drug_id
     description: "Exact CodeRx clinical product used to match brand and generic ingredient, strength and dosage form."
   - name: clinical_drug_name
@@ -464,13 +469,13 @@ models:
     data_tests:
     - not_null
   - name: brand_screening_basis
-    description: brand_flag for the baseline, or enterprise_nda_category when optional
+    description: brand_flag for the baseline, or enterprise_nda_category when paid
       regulatory category screening is applied to the current brand.
   - name: generic_screening_basis
     description: Screening used for the available catalog alternatives; mixed_screening_basis
       identifies alternatives with different screening bases.
   - name: marketing_screening_applied_flag
-    description: 1 only when the brand and all catalog alternatives used optional
+    description: 1 only when the brand and all catalog alternatives used paid
       Enterprise marketing screening. This is not a therapeutic-equivalence determination.
   - name: data_source
     description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
@@ -591,7 +596,8 @@ models:
   config:
     schema: |
       {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Visible excluded exposure and ingredient mapping counts.
+  description: Enterprise-only excluded exposure and CodeRx ingredient mapping
+    counts. The table retains its columns but is empty under Open.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -601,7 +607,9 @@ models:
   config:
     schema: |
       {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Source-scoped counts that reconcile to patient drilldowns.
+  description: Enterprise-only source-scoped condition counts that reconcile to
+    patient drilldowns. Empty under Open; capability status distinguishes an
+    unavailable workflow from a population with no review candidates.
   columns:
   - name: refill_denominator_patients
     description: Living patients with qualifying condition evidence in a source with
@@ -651,7 +659,7 @@ models:
   - name: generic_screening_basis
     description: Screening basis shared by generic alternatives, or mixed_screening_basis.
   - name: marketing_screening_applied_flag
-    description: 1 only when every underlying opportunity used optional marketing
+    description: 1 only when every underlying opportunity used Enterprise marketing
       screening for both the brand and all catalog alternatives.
   - name: data_source
     description: "Source component of patient and claim identity. Joins and counts remain source-scoped."

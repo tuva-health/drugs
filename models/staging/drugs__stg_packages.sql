@@ -1,3 +1,4 @@
+{% do drugs_validate_enterprise_relation('packages') %}
 {% set marketing = drugs_enterprise_marketing_enabled() %}
 with packages as (
     select

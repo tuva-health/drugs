@@ -1,4 +1,5 @@
 {{ config(tags=['drugs_scenarios']) }}
+{% if drugs.drugs_enterprise() %}
 -- Fixed expectations cover all seven diagnoses after Core's condition grouper,
 -- including no treatment, unknown duration, deceased, and missing-feed cases.
 with actual as (
@@ -23,3 +24,14 @@ select a.person_id,a.data_source,a.condition_code
 from actual a left join {{ ref('expected_condition_status') }} e
  on e.person_id=a.person_id and e.data_source=a.data_source and e.condition_code=a.condition_code
 where e.person_id is null
+
+{% else %}
+-- Disabled clinical features remain empty, including after partial rebuilds.
+select 'condition_status' as unexpectedly_populated_relation from {{ ref('drugs__condition_status') }}
+union all
+select 'medication_condition' as unexpectedly_populated_relation from {{ ref('drugs__medication_condition') }}
+union all
+select 'open_drug_gap' as unexpectedly_populated_relation from {{ ref('drugs__open_drug_gap') }}
+union all
+select 'needs_refill' as unexpectedly_populated_relation from {{ ref('drugs__needs_refill') }}
+{% endif %}

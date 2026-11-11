@@ -1,4 +1,3 @@
-# Regression cases for exact ingredients, refill evidence, and condition reporting.
 version: 2
 unit_tests:
 - name: ingredient_specific_condition_rules_do_not_broaden_atc_classes
@@ -6,6 +5,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__stg_drugs')
     rows:
@@ -116,7 +116,6 @@ unit_tests:
       condition_code: t2d
       condition_name: Type 2 Diabetes Mellitus
       atc_prefix: A10
-      drug_name_contains: null
       refill_eligible_flag: 1
       rule_note: Glucose-lowering medication; not a guideline-concordance measure
       ingredient_rxcui: null
@@ -125,7 +124,6 @@ unit_tests:
       condition_code: chf
       condition_name: Heart Failure
       atc_prefix: C01EB
-      drug_name_contains: null
       refill_eligible_flag: 1
       rule_note: Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
       ingredient_rxcui: '1649480'
@@ -134,7 +132,6 @@ unit_tests:
       condition_code: chf
       condition_name: Heart Failure
       atc_prefix: C02DB
-      drug_name_contains: null
       refill_eligible_flag: 1
       rule_note: Broad HF-related therapy including symptom relief; not complete GDMT or EF-specific assessment
       ingredient_rxcui: '5470'
@@ -143,7 +140,6 @@ unit_tests:
       condition_code: afib
       condition_name: Atrial Fibrillation and Flutter
       atc_prefix: B01AE
-      drug_name_contains: null
       refill_eligible_flag: 1
       rule_note: Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention
         measure
@@ -173,6 +169,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__medication_condition')
     rows:
@@ -375,6 +372,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__condition_status')
     rows:
@@ -483,6 +481,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__condition_evidence')
     rows:
@@ -876,3 +875,345 @@ unit_tests:
       open_drug_gap_flag: null
       needs_refill_flag: null
       estimated_refill_due_date: '2026-10-26'
+- name: paid_policy_uses_exact_ingredients_without_name_substrings
+  model: drugs__drug_condition
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
+  given:
+  - input: ref('drugs__stg_drugs')
+    rows:
+    - drug_id: formoterol
+      clinical_drug_id: formoterol
+      drug_name: formoterol
+    - drug_id: arformoterol
+      clinical_drug_id: arformoterol
+      drug_name: arformoterol
+    - drug_id: glycopyrronium
+      clinical_drug_id: glycopyrronium
+      drug_name: glycopyrronium
+    - drug_id: quinidine
+      clinical_drug_id: quinidine
+      drug_name: quinidine
+    - drug_id: hydroquinidine
+      clinical_drug_id: hydroquinidine
+      drug_name: hydroquinidine
+    - drug_id: legacy_quinidine_combo
+      clinical_drug_id: legacy_quinidine_combo
+      drug_name: legacy_quinidine_combo
+    - drug_id: misleading_name
+      clinical_drug_id: misleading_name
+      drug_name: quinidine glycopyrronium formoterol
+  - input: ref('drugs__stg_classes')
+    rows:
+    - drug_id: formoterol
+      atc_4_code: R03AC
+    - drug_id: arformoterol
+      atc_4_code: R03AC
+    - drug_id: glycopyrronium
+      atc_4_code: R03BB
+    - drug_id: quinidine
+      atc_4_code: C01BA
+    - drug_id: hydroquinidine
+      atc_4_code: C01BA
+    - drug_id: legacy_quinidine_combo
+      atc_4_code: C01BA
+    - drug_id: misleading_name
+      atc_4_code: R03BB
+  - input: ref('drugs__stg_ingredient')
+    rows:
+    - drug_id: formoterol
+      ingredient_id: '25255'
+    - drug_id: arformoterol
+      ingredient_id: '304962'
+    - drug_id: glycopyrronium
+      ingredient_id: '1546438'
+    - drug_id: quinidine
+      ingredient_id: '9068'
+    - drug_id: hydroquinidine
+      ingredient_id: '27220'
+    - drug_id: legacy_quinidine_combo
+      ingredient_id: '54620'
+    - drug_id: misleading_name
+      ingredient_id: '999999'
+  - input: ref('drugs__condition_rule')
+    rows:
+    - rule_id: 18
+      rule_version: '2026-11-11'
+      condition_code: copd
+      condition_name: Chronic Obstructive Pulmonary Disease
+      atc_prefix: R03
+      refill_eligible_flag: 1
+      rule_note: Long-acting maintenance ingredient; confirm regimen
+      ingredient_rxcui: '25255'
+    - rule_id: 25
+      rule_version: '2026-11-11'
+      condition_code: copd
+      condition_name: Chronic Obstructive Pulmonary Disease
+      atc_prefix: R03
+      refill_eligible_flag: 1
+      rule_note: Long-acting maintenance ingredient; confirm regimen
+      ingredient_rxcui: '1546438'
+    - rule_id: 34
+      rule_version: '2026-11-11'
+      condition_code: asthma
+      condition_name: Asthma
+      atc_prefix: R03
+      refill_eligible_flag: 1
+      rule_note: Long-acting maintenance ingredient; confirm regimen
+      ingredient_rxcui: '25255'
+    - rule_id: 41
+      rule_version: '2026-11-11'
+      condition_code: asthma
+      condition_name: Asthma
+      atc_prefix: R03
+      refill_eligible_flag: 1
+      rule_note: Long-acting maintenance ingredient; confirm regimen
+      ingredient_rxcui: '1546438'
+    - rule_id: 70
+      rule_version: '2026-11-11'
+      condition_code: afib
+      condition_name: Atrial Fibrillation and Flutter
+      atc_prefix: C01B
+      refill_eligible_flag: 1
+      rule_note: Anticoagulation OR rate/rhythm-control evidence; not an anticoagulation eligibility or stroke-prevention
+        measure
+      ingredient_rxcui: '9068'
+    - rule_id: 71
+      rule_version: '2026-11-11'
+      condition_code: copd
+      condition_name: Chronic Obstructive Pulmonary Disease
+      atc_prefix: R03
+      refill_eligible_flag: 1
+      rule_note: Long-acting arformoterol ingredient; explicit preservation of prior related-therapy policy; confirm
+        regimen
+      ingredient_rxcui: '304962'
+    - rule_id: 72
+      rule_version: '2026-11-11'
+      condition_code: asthma
+      condition_name: Asthma
+      atc_prefix: R03
+      refill_eligible_flag: 1
+      rule_note: Long-acting arformoterol ingredient; explicit preservation of prior related-therapy policy; confirm
+        regimen
+      ingredient_rxcui: '304962'
+  expect:
+    rows:
+    - drug_id: formoterol
+      condition_code: asthma
+      refill_eligible_flag: 1
+    - drug_id: formoterol
+      condition_code: copd
+      refill_eligible_flag: 1
+    - drug_id: arformoterol
+      condition_code: asthma
+      refill_eligible_flag: 1
+    - drug_id: arformoterol
+      condition_code: copd
+      refill_eligible_flag: 1
+    - drug_id: glycopyrronium
+      condition_code: asthma
+      refill_eligible_flag: 1
+    - drug_id: glycopyrronium
+      condition_code: copd
+      refill_eligible_flag: 1
+    - drug_id: quinidine
+      condition_code: afib
+      refill_eligible_flag: 1
+- name: open_condition_status_is_empty_even_with_paid_intermediate_evidence
+  model: drugs__condition_status
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: false
+  given:
+  - input: ref('drugs__condition_evidence')
+    rows:
+    - condition_id: overdue_rescue_a_asthma
+      person_id: overdue_rescue
+      data_source: a
+      condition_name: Asthma
+      condition_date: '2026-09-01'
+      file_date: '2026-10-26'
+      ingest_datetime: '2026-10-26 08:00:00'
+  - input: ref('drugs__condition_rule')
+    rows:
+    - condition_code: asthma
+      condition_name: Asthma
+  - input: ref('drugs__patient_context')
+    rows:
+    - person_id: overdue_rescue
+      data_source: a
+      assessment_date: '2026-10-26'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-10-25'
+  - input: ref('drugs__condition_medication_summary')
+    rows:
+    - person_id: overdue_rescue
+      data_source: a
+      condition_code: asthma
+      prior_condition_fill_count: 3
+      active_condition_supply_flag: 1
+      active_maintenance_supply_flag: 0
+      unknown_duration_flag: 0
+      maintenance_supply_end_date: '2026-10-20'
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: controller
+      latest_maintenance_drug_name: controller name
+      treatment_evidence_file_date: '2026-10-26'
+      treatment_evidence_ingest_datetime: '2026-10-26 08:00:00'
+  expect:
+    rows: []
+- name: open_condition_summary_is_empty_even_with_paid_status_rows
+  model: drugs__condition_summary
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: false
+  given:
+  - input: ref('drugs__condition_status')
+    rows:
+    - person_id: due
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: 1
+      open_drug_gap_flag: 1
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: unknown_exposure
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: null
+      open_drug_gap_flag: null
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: no_prior_fills
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: 0
+      open_drug_gap_flag: 1
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: deceased
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: 0
+      open_drug_gap_flag: 0
+      deceased_flag: 1
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: due
+      data_source: b
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: 1
+      open_drug_gap_flag: 1
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+    - person_id: no_feed
+      data_source: c
+      assessment_date: '2026-10-26'
+      condition_code: asthma
+      condition_name: Asthma
+      needs_refill_flag: null
+      open_drug_gap_flag: null
+      deceased_flag: 0
+      source_latest_fill_date: null
+      outreach_readiness_status: current_record_review
+    - person_id: zero_flags
+      data_source: a
+      assessment_date: '2026-10-26'
+      condition_code: htn
+      condition_name: Hypertension
+      needs_refill_flag: 0
+      open_drug_gap_flag: 0
+      deceased_flag: 0
+      source_latest_fill_date: '2026-10-25'
+      outreach_readiness_status: current_record_review
+  expect:
+    rows: []
+- name: open_open_drug_gap_ignores_stale_paid_rows
+  model: drugs__open_drug_gap
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: false
+  given:
+  - input: ref('drugs__condition_status')
+    rows: &id001
+    - condition_status_id: example
+      open_drug_gap_flag: 1
+      needs_refill_flag: 1
+      days_overdue: 1
+  expect:
+    rows: []
+- name: open_needs_refill_ignores_stale_paid_rows
+  model: drugs__needs_refill
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: false
+  given:
+  - input: ref('drugs__condition_status')
+    rows: *id001
+  expect:
+    rows: []
+- name: open_medication_condition_does_not_expose_partial_policy_results
+  model: drugs__medication_condition
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: false
+  given:
+  - input: ref('drugs__medication')
+    rows:
+    - medication_id: fill
+      person_id: person
+      data_source: a
+      drug_id: drug
+      dispensing_date: '2026-10-01'
+  - input: ref('drugs__drug_condition')
+    rows:
+    - drug_id: drug
+      condition_code: htn
+  - input: ref('drugs__fill')
+    rows:
+    - medication_id: fill
+      person_id: person
+      data_source: a
+      supply_start_date: '2026-10-01'
+      supply_end_date: '2026-10-30'
+  expect:
+    rows: []
+- name: open_episode_quality_does_not_label_unavailable_features_as_missing_data
+  model: drugs__episode_mapping_quality
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: false
+  given:
+  - input: ref('drugs__medication')
+    rows:
+    - medication_id: fill
+      person_id: person
+      data_source: a
+      exposure_status: usable
+  - input: ref('drugs__ingredient_fill')
+    rows: []
+  expect:
+    rows: []

@@ -1,29 +1,22 @@
--- Keep the optional source in the DAG even when it is absent from the warehouse.
--- depends_on: {{ source('coderx_enterprise', 'ingredients') }}
--- Public current RxNorm IN relationships remain the baseline in both modes.
-with public_map as (
-    select
-        cast(drug_id as {{ dbt.type_string() }}) as drug_id,
-        cast(ingredient_id as {{ dbt.type_string() }}) as ingredient_id,
-        min(ingredient_name) as ingredient_name
-    from {{ ref('drugs__rxnorm_drug_ingredient') }}
-    where ingredient_id is not null
-    group by drug_id, ingredient_id
-)
-select drug_id, ingredient_id, ingredient_name, 'rxnorm_prescribable' as mapping_source
-from public_map
-{% if drugs_enterprise_ingredients_enabled() %}
-union all
+-- CodeRx Enterprise is the sole authority for atomic ingredient relationships.
+{% if drugs_enterprise() %}
+{% do drugs_validate_enterprise_relation('ingredients') %}
 select
-    cast(i.drug_id as {{ dbt.type_string() }}) as drug_id,
-    cast(i.ingredient_component_id as {{ dbt.type_string() }}) as ingredient_id,
-    min(i.ingredient_component_name) as ingredient_name,
+    cast(drug_id as {{ dbt.type_string() }}) as drug_id,
+    cast(ingredient_component_id as {{ dbt.type_string() }}) as ingredient_id,
+    min(ingredient_component_name) as ingredient_name,
     'coderx_enterprise' as mapping_source
-from {{ source('coderx_enterprise', 'ingredients') }} i
-where i.ingredient_component_type = 'IN'
-  and i.ingredient_component_id is not null
-  and not exists (
-      select 1 from public_map p where cast(i.drug_id as {{ dbt.type_string() }}) = p.drug_id
-  )
-group by i.drug_id, i.ingredient_component_id
+from {{ source('coderx_enterprise', 'ingredients') }}
+where ingredient_component_type = 'IN'
+  and ingredient_component_id is not null
+  and drug_id is not null
+group by drug_id, ingredient_component_id
+{% else %}
+-- A stable empty schema lets Open notebooks run without implying ingredient coverage.
+select
+    cast(null as {{ dbt.type_string() }}) as drug_id,
+    cast(null as {{ dbt.type_string() }}) as ingredient_id,
+    cast(null as {{ dbt.type_string() }}) as ingredient_name,
+    cast(null as {{ dbt.type_string() }}) as mapping_source
+where 1 = 0
 {% endif %}

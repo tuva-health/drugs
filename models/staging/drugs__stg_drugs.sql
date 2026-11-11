@@ -1,3 +1,4 @@
+{% do drugs_validate_enterprise_relation('drugs') %}
 {% set details = drugs_enterprise_drug_details_enabled() %}
 select
     cast(drug_id as {{ dbt.type_string() }}) as drug_id,
@@ -9,12 +10,10 @@ select
     {{ drugs_flag('prescribable') }} as prescribable_flag,
     {% if details %}
     cast(ingredient_id as {{ dbt.type_string() }}) as ingredient_id,
-    {{ drugs_ingredient_set_key('ingredient_id') }} as therapy_ingredient_id,
     ingredient_name,
     dose_form_name,
     {% else %}
     cast(null as {{ dbt.type_string() }}) as ingredient_id,
-    cast(null as {{ dbt.type_string() }}) as therapy_ingredient_id,
     cast(null as {{ dbt.type_string() }}) as ingredient_name,
     cast(null as {{ dbt.type_string() }}) as dose_form_name,
     {% endif %}

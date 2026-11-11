@@ -4,51 +4,65 @@ models:
     config:
       schema: |
         {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-    description: >-
-      One row describing the terminology source and optional enrichments used
-      for this build. Missing Enterprise extras preserve baseline workflows.
+    description: One row identifying the CodeRx tier and which analytics are enabled for this build.
     columns:
       - name: assessment_date
-        description: Clinical assessment date for this mart build, not a historical warehouse snapshot.
+        description: Clinical assessment date, not a historical warehouse snapshot.
         data_tests: [not_null]
       - name: terminology_tier
-        description: Open Core assets or explicitly selected paid Enterprise base tables. Missing paid base tables never silently fall back to Open.
+        description: CodeRx tier selected by the single use_coderx_enterprise toggle. Required paid inputs are validated without fallback.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [open, enterprise]
       - name: capability_status
-        description: Distinguishes the Open baseline, disabled extras, and available Enterprise enrichments.
+        description: Open supports Brand vs. Generic; Enterprise additionally enables the three clinical workflows.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
-                values: [open_baseline, enterprise_enrichment_disabled, enterprise_base_only, enterprise_partially_enriched, enterprise_enriched]
+                values: [open_brand_generic_only, enterprise_clinical_and_economics]
+      - name: clinical_analytics_enabled_flag
+        description: 1 when CodeRx Enterprise enables Drug Episodes, Open Drug Gaps, and Needs Refill. A value of 0 means the clinical tables are unavailable and empty, not that there are no patients needing review.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: ingredient_episodes_enabled_flag
+        description: 1 when CodeRx Enterprise atomic ingredient relationships enable drug episodes. Open retains the output columns with no rows.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
       - name: enterprise_drug_details_enabled_flag
-        description: 1 when optional ingredient and dose-form descriptions are enabled and their columns are available.
+        description: 1 when the required CodeRx Enterprise drug detail fields are selected.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [0, 1]
+                quote: false
       - name: enterprise_ingredients_enabled_flag
-        description: 1 when the optional Enterprise atomic-ingredient relation is enabled and available.
+        description: 1 when CodeRx Enterprise is the atomic ingredient authority.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [0, 1]
+                quote: false
       - name: enterprise_marketing_enabled_flag
-        description: 1 when optional package marketing columns are enabled and available; individual rows may still lack a category.
+        description: 1 when the required CodeRx Enterprise marketing fields are selected; individual values may remain unknown.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [0, 1]
-      - name: public_ingredient_asset_version
-        description: Package-owned public ingredient bridge version used by the build.
-        data_tests: [not_null]
+                quote: false
   - name: drugs__condition_medication_summary
     config:
       schema: |

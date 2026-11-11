@@ -1,66 +1,136 @@
+# Fabricated values test source/person delimiter collisions.
 version: 2
 unit_tests:
-  # These pairs collide under the former '-' delimited serialization.
-  # Expected hashes use Core's documented escaped, domain-qualified serialization.
-  - name: drugs_episode_ids_preserve_source_and_person_boundaries
-    model: drugs__drug_episode
-    overrides:
-      vars:
-        drugs_as_of_date: '2026-01-31'
-    given:
-      - input: ref('drugs__episode_fill')
-        rows:
-          - {person_id: p-s, data_source: a, therapy_id: 'ingredient:x', therapy_name: X, therapy_grain: ingredient, drug_code: x, drug_name: X, episode_number: 1, medication_id: one, dispensing_date: '2026-01-01', supply_start_date: '2026-01-01', supply_end_date: '2026-01-30', contributed_covered_days: 30}
-          - {person_id: p, data_source: s-a, therapy_id: 'ingredient:x', therapy_name: X, therapy_grain: ingredient, drug_code: x, drug_name: X, episode_number: 1, medication_id: two, dispensing_date: '2026-01-01', supply_start_date: '2026-01-01', supply_end_date: '2026-01-30', contributed_covered_days: 30}
-    expect:
-      rows:
-        - {person_id: p-s, data_source: a, episode_id: 91e0b51b06ca5958a21d959521ecd2e4}
-        - {person_id: p, data_source: s-a, episode_id: 6f9e8d9d289b8d084be839568408e651}
-
-  - name: drugs_condition_ids_preserve_source_and_person_boundaries
-    model: drugs__condition_status
-    overrides:
-      vars:
-        drugs_as_of_date: '2026-01-31'
-    given:
-      - input: ref('drugs__condition_evidence')
-        rows:
-          - {person_id: p-s, data_source: a, condition_name: Hypertension, condition_date: '2026-01-01'}
-          - {person_id: p, data_source: s-a, condition_name: Hypertension, condition_date: '2026-01-01'}
-      - input: ref('drugs__condition_rule')
-        rows:
-          - {condition_code: htn, condition_name: Hypertension}
-      - input: ref('drugs__patient_context')
-        rows:
-          - {person_id: p-s, data_source: a, assessment_date: '2026-01-31', deceased_flag: 0, recent_unmapped_drug_flag: 0, source_latest_fill_date: '2026-01-30'}
-          - {person_id: p, data_source: s-a, assessment_date: '2026-01-31', deceased_flag: 0, recent_unmapped_drug_flag: 0, source_latest_fill_date: '2026-01-30'}
-      - input: ref('drugs__condition_medication_summary')
-        rows: []
-    expect:
-      rows:
-        - {person_id: p-s, data_source: a, condition_status_id: e8fa17c0ed139415b8b2f83e05790f7a}
-        - {person_id: p, data_source: s-a, condition_status_id: 3a96c886449e2bfb80f4d566a1df7294}
-
-  - name: drugs_opportunity_ids_preserve_source_and_person_boundaries
-    model: drugs__brand_generic_opportunity
-    overrides:
-      vars:
-        drugs_as_of_date: '2026-01-31'
-    given:
-      - input: ref('drugs__current_brand')
-        rows:
-          - {person_id: p-s, data_source: a, medication_id: one, clinical_drug_id: x, paid_amount: 100, quantity: 30, days_supply: 30}
-          - {person_id: p, data_source: s-a, medication_id: two, clinical_drug_id: x, paid_amount: 100, quantity: 30, days_supply: 30}
-      - input: ref('drugs__generic_alternative')
-        rows:
-          - {clinical_drug_id: x, generic_ndc_code: generic}
-      - input: ref('drugs__patient_context')
-        rows:
-          - {person_id: p-s, data_source: a, deceased_flag: 0}
-          - {person_id: p, data_source: s-a, deceased_flag: 0}
-      - input: ref('drugs__generic_benchmark')
-        rows: []
-    expect:
-      rows:
-        - {person_id: p-s, data_source: a, opportunity_id: a0c5c3f1af9485055d33a70ce331ebad}
-        - {person_id: p, data_source: s-a, opportunity_id: bbde90287ba010a8348fb2f84be6cb22}
+- name: drugs_episode_ids_preserve_source_and_person_boundaries
+  model: drugs__drug_episode
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-01-31'
+      use_coderx_enterprise: true
+  given:
+  - input: ref('drugs__episode_fill')
+    rows:
+    - person_id: p-s
+      data_source: a
+      therapy_id: ingredient:x
+      therapy_name: X
+      therapy_grain: ingredient
+      drug_code: x
+      drug_name: X
+      episode_number: 1
+      medication_id: one
+      dispensing_date: '2026-01-01'
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      contributed_covered_days: 30
+    - person_id: p
+      data_source: s-a
+      therapy_id: ingredient:x
+      therapy_name: X
+      therapy_grain: ingredient
+      drug_code: x
+      drug_name: X
+      episode_number: 1
+      medication_id: two
+      dispensing_date: '2026-01-01'
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      contributed_covered_days: 30
+  expect:
+    rows:
+    - person_id: p-s
+      data_source: a
+      episode_id: 91e0b51b06ca5958a21d959521ecd2e4
+    - person_id: p
+      data_source: s-a
+      episode_id: 6f9e8d9d289b8d084be839568408e651
+- name: drugs_condition_ids_preserve_source_and_person_boundaries
+  model: drugs__condition_status
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-01-31'
+      use_coderx_enterprise: true
+  given:
+  - input: ref('drugs__condition_evidence')
+    rows:
+    - person_id: p-s
+      data_source: a
+      condition_name: Hypertension
+      condition_date: '2026-01-01'
+    - person_id: p
+      data_source: s-a
+      condition_name: Hypertension
+      condition_date: '2026-01-01'
+  - input: ref('drugs__condition_rule')
+    rows:
+    - condition_code: htn
+      condition_name: Hypertension
+  - input: ref('drugs__patient_context')
+    rows:
+    - person_id: p-s
+      data_source: a
+      assessment_date: '2026-01-31'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-01-30'
+    - person_id: p
+      data_source: s-a
+      assessment_date: '2026-01-31'
+      deceased_flag: 0
+      recent_unmapped_drug_flag: 0
+      source_latest_fill_date: '2026-01-30'
+  - input: ref('drugs__condition_medication_summary')
+    rows: []
+  expect:
+    rows:
+    - person_id: p-s
+      data_source: a
+      condition_status_id: e8fa17c0ed139415b8b2f83e05790f7a
+    - person_id: p
+      data_source: s-a
+      condition_status_id: 3a96c886449e2bfb80f4d566a1df7294
+- name: drugs_opportunity_ids_preserve_source_and_person_boundaries
+  model: drugs__brand_generic_opportunity
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-01-31'
+      use_coderx_enterprise: true
+  given:
+  - input: ref('drugs__current_brand')
+    rows:
+    - person_id: p-s
+      data_source: a
+      medication_id: one
+      clinical_drug_id: x
+      paid_amount: 100
+      quantity: 30
+      days_supply: 30
+    - person_id: p
+      data_source: s-a
+      medication_id: two
+      clinical_drug_id: x
+      paid_amount: 100
+      quantity: 30
+      days_supply: 30
+  - input: ref('drugs__generic_alternative')
+    rows:
+    - clinical_drug_id: x
+      generic_ndc_code: generic
+  - input: ref('drugs__patient_context')
+    rows:
+    - person_id: p-s
+      data_source: a
+      deceased_flag: 0
+    - person_id: p
+      data_source: s-a
+      deceased_flag: 0
+  - input: ref('drugs__generic_benchmark')
+    rows: []
+  expect:
+    rows:
+    - person_id: p-s
+      data_source: a
+      opportunity_id: a0c5c3f1af9485055d33a70ce331ebad
+    - person_id: p
+      data_source: s-a
+      opportunity_id: bbde90287ba010a8348fb2f84be6cb22

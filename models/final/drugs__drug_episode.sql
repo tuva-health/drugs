@@ -16,3 +16,4 @@ select {{ the_tuva_project.stable_id_hash(["'drugs_episode'",'person_id','data_s
  when {{ dbt.dateadd('day',var('drugs_episode_gap_days'),'episode_end_date') }}>={{ drugs_as_of() }} then 'within_permissible_gap'
  else 'no_later_supply_observed' end as episode_end_status
 from episodes e
+where {{ 1 if drugs_enterprise() else 0 }} = 1

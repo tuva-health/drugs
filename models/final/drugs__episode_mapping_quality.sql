@@ -6,4 +6,5 @@ select m.data_source,count(*) as medication_claim_count,
  sum(case when m.exposure_status='usable' and f.medication_id is null then 1 else 0 end) as usable_claims_without_ingredient,
  sum(case when m.exposure_status<>'usable' then 1 else 0 end) as unusable_supply_claim_count
 from {{ ref('drugs__medication') }} m left join mapped f on m.medication_id=f.medication_id and m.person_id=f.person_id and m.data_source=f.data_source
+where {{ 1 if drugs_enterprise() else 0 }}=1
 group by m.data_source

@@ -6,6 +6,7 @@ unit_tests:
     vars:
       drugs_as_of_date: '2026-10-26'
       drugs_episode_gap_days: 0
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__ingredient_fill')
     rows: &id001
@@ -129,6 +130,7 @@ unit_tests:
     vars:
       drugs_as_of_date: '2026-10-26'
       drugs_episode_gap_days: 1
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__ingredient_fill')
     rows: *id001
@@ -168,6 +170,7 @@ unit_tests:
     vars:
       drugs_as_of_date: '2026-10-26'
       drugs_episode_gap_days: 30
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__ingredient_fill')
     rows: *id001
@@ -296,6 +299,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__condition_evidence')
     rows:
@@ -564,6 +568,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__stg_drugs')
     rows:
@@ -584,27 +589,27 @@ unit_tests:
     - drug_id: maintenance
       atc_4_code: R03BB
   - input: ref('drugs__stg_ingredient')
-    rows: []
+    rows:
+    - drug_id: maintenance
+      ingredient_id: '69120'
   - input: ref('drugs__condition_rule')
     rows:
     - rule_id: 1
       condition_code: t2d
       condition_name: Type 2 Diabetes Mellitus
       atc_prefix: A10
-      drug_name_contains: null
       refill_eligible_flag: 1
     - rule_id: 2
       condition_code: copd
       condition_name: Chronic Obstructive Pulmonary Disease
       atc_prefix: R03
-      drug_name_contains: null
       refill_eligible_flag: 0
     - rule_id: 3
       condition_code: copd
       condition_name: Chronic Obstructive Pulmonary Disease
       atc_prefix: R03
-      drug_name_contains: tiotropium
       refill_eligible_flag: 1
+      ingredient_rxcui: '69120'
   expect:
     rows:
     - drug_id: sema
@@ -1025,6 +1030,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__fill')
     rows:
@@ -1106,6 +1112,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__ingredient_fill')
     rows:
@@ -1171,6 +1178,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__stg_drugs')
     rows:
@@ -1197,7 +1205,9 @@ unit_tests:
     - drug_id: lido
       atc_4_code: C01BB
   - input: ref('drugs__stg_ingredient')
-    rows: []
+    rows:
+    - drug_id: amio
+      ingredient_id: '703'
   - input: ref('drugs__condition_rule')
     rows:
     - rule_id: 1
@@ -1214,8 +1224,8 @@ unit_tests:
       condition_code: afib
       condition_name: Atrial Fibrillation and Flutter
       atc_prefix: C01B
-      drug_name_contains: amiodarone
       refill_eligible_flag: 1
+      ingredient_rxcui: '703'
   expect:
     rows:
     - drug_id: sglt2
@@ -1287,6 +1297,7 @@ unit_tests:
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: true
   given:
   - input: ref('drugs__condition_status')
     rows:

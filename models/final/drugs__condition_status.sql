@@ -36,3 +36,4 @@ select {{ the_tuva_project.stable_id_hash(["'drugs_condition_status'",'person_id
  and (active_maintenance_supply_flag=0 or days_overdue<0) then 1 else 0 end as {{ dbt.type_int() }}) as needs_refill_flag,
  case when prior_condition_fill_count=0 then 'no_prior_qualifying_claim' else 'prior_treatment_now_without_active_supply' end as gap_history
 from assessed
+where {{ 1 if drugs_enterprise() else 0 }}=1

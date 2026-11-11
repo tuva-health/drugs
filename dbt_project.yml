@@ -20,8 +20,6 @@ clean-targets:
 - dbt_packages
 vars:
   use_coderx_enterprise: false
-  drugs_enable_enterprise_enrichment: true
-  drugs_data_asset_version: '1.0.0'
   drugs_as_of_date: null
   drugs_episode_gap_days: 30
   drugs_stockpile_early_refills: false
@@ -41,9 +39,5 @@ models:
     - drugs
     staging:
       +materialized: view
-seeds:
-  drugs:
-    drugs__rxnorm_drug_ingredient:
-      +post-hook: "{{ the_tuva_project.load_package_seed('data-marts/drugs', var('drugs_data_asset_version'), 'drugs__rxnorm_drug_ingredient.csv.gz') }}"
 on-run-start:
 - '{{ drugs_validate_config() }}'

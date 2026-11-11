@@ -4,9 +4,9 @@ This root dbt project maps the published **small Tuva synthetic claims** and a s
 
 The controlled cohort has 42 patient/source records, 57 pharmacy claims, and 34 diagnosis claims. It is deliberately small enough to inspect. Scenario financial inputs populate payer `paid_amount`; other financial columns are null. The original published claims are passed through unchanged.
 
-The assessment date is fixed at **November 10, 2026**. Claims are fabricated test data, not clinical guidance. The medications illustrate the package's existing related-treatment rules; they are not proposed treatment regimens.
+The assessment date is fixed at **November 10, 2026**. Claims are fabricated test data, not clinical guidance. The medications illustrate the package's existing related-treatment rules; they are not proposed treatment regimens. Clinical scenarios require CodeRx Enterprise. Open retains the medication and economic workflows, with empty clinical output tables and disabled clinical capability flags.
 
-## Expected outcomes
+## Enterprise scenario expectations
 
 | Scenario | Expected result |
 |---|---|
@@ -43,20 +43,37 @@ Before building, provision Core's required versioned assets into the selected sc
 
 The default prefix is `drugs_validation_20261110_open`. Override `tuva_schema_prefix` for each additional mode. This keeps Core, Drugs, scenario inputs, and connector outputs isolated from ordinary development tables. The fixed dates and scenario expectations should remain unchanged for this suite.
 
-Load only the package-owned inputs and changed Drugs assets, then build the complete Core-to-Drugs graph:
+For the full clinical scenario suite, load the package-owned rule and scenario inputs, then build the complete Core-to-Drugs graph with Enterprise enabled:
 
 ```bash
 dbt seed --profiles-dir ~/.dbt --profile snowflake-dev \
-  --select package:drugs_integration_tests package:drugs
+  --select package:drugs_integration_tests package:drugs \
+  --vars '{use_coderx_enterprise: true, tuva_schema_prefix: drugs_validation_enterprise}'
 dbt build --profiles-dir ~/.dbt --profile snowflake-dev \
   --select package:drugs_integration_tests package:the_tuva_project package:drugs \
-  --exclude resource_type:seed
+  --exclude resource_type:seed \
+  --vars '{use_coderx_enterprise: true, tuva_schema_prefix: drugs_validation_enterprise}'
 dbt test --profiles-dir ~/.dbt --profile snowflake-dev \
-  --select tag:drugs_scenarios
+  --select tag:drugs_scenarios \
+  --vars '{use_coderx_enterprise: true, tuva_schema_prefix: drugs_validation_enterprise}'
 ```
 
 The final `dbt test` command is required: excluding seed nodes from `dbt build` also excludes tests that depend on the expected-result seeds. Running `dbt test` without that exclusion executes all seven scenario assertions and does not reload seeds.
 
-For Enterprise validation, supply native boolean `use_coderx_enterprise: true`, configure the three user-managed CodeRx tables required by Core, and select a separate schema prefix. Drugs can use the same three tables with no optional enrichment, or add the licensed ingredient and marketing fields described in the package README. Keep the Core and Drugs terminology snapshots aligned. Set `drugs_enable_enterprise_enrichment: false` to exercise the explicit opt-out path. Apply the same variables to seeding and building.
+Enterprise validation requires the full licensed `packages`, `drugs`,
+`classes` and `ingredients` relations documented in the package README.
+Core reads the first three; Drugs uses the atomic ingredient relationships for
+its clinical workflows. Required tables and columns must be present before
+the build. All four relations must satisfy the paid source contract.
+Keep Core and Drugs terminology snapshots aligned.
+
+For Open validation, use `use_coderx_enterprise: false` and a separate prefix.
+Expect medication enrichment and brand-to-generic candidates, empty clinical
+tables and `clinical_analytics_enabled_flag = 0`. An empty clinical table in
+this mode is an availability rule, not a zero-needs result. Run the same seven scenario tests in both modes. In Enterprise they compare
+clinical outputs with the fixed expectations above. In Open the condition
+and episode tests instead assert that clinical tables, including
+`medication_condition` and `episode_mapping_quality`, are empty. Core
+preservation and brand/economics assertions are unchanged.
 
 Inspect `run_results.json` and the seven `drugs_scenarios` singular tests before reporting success. The parse CI only checks compilation and schema placement; it does not connect to a warehouse or prove Snowflake/Databricks runtime compatibility.

@@ -7,3 +7,4 @@ select m.medication_id,m.person_id,m.data_source,m.therapy_id,m.drug_id,m.drug_n
 from {{ ref('drugs__medication') }} m join {{ ref('drugs__drug_condition') }} r on m.drug_id=r.drug_id
 left join {{ ref('drugs__fill') }} f on m.person_id=f.person_id and m.data_source=f.data_source and m.medication_id=f.medication_id
 where m.dispensing_date<={{ drugs_as_of() }}
+ and {{ 1 if drugs_enterprise() else 0 }}=1

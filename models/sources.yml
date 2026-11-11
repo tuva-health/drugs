@@ -3,8 +3,8 @@ sources:
   - name: coderx_enterprise
     description: >-
       User-managed licensed CodeRx in the same fixed schema used by Tuva Core.
-      The three base relations are required only in Enterprise mode. Extra
-      fields and the ingredients relation are optional enrichments.
+      All four relations and their documented fields are required in Enterprise
+      mode. Open does not read these licensed relations.
     database: "{{ var('drugs_coderx_database', target.database) }}"
     schema: "{{ var('drugs_coderx_schema', 'coderx') }}"
     tables:

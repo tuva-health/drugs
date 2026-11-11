@@ -30,13 +30,3 @@
   {# Spark FLOAT is 32-bit; decomposition must retain cent-level reconciliation. #}
   {{ return('double' if target.type in ['databricks', 'spark'] else dbt.type_float()) }}
 {% endmacro %}
-
-{% macro drugs_ingredient_set_key(column) %}
-  {# Vendor pack lists can reorder/repeat concept IDs between releases.
-     Therapy identity is an unordered set; stockpiling still uses clinical product. #}
-  {% if target.type in ['databricks', 'spark'] %}
-    nullif(array_join(array_sort(array_distinct(split(replace({{ column }}, ' ', ''), '[|]'))), ' | '), '')
-  {% else %}
-    nullif(array_to_string(array_sort(array_distinct(split(replace({{ column }}, ' ', ''), '|'))), ' | '), '')
-  {% endif %}
-{% endmacro %}
