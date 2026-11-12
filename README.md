@@ -2,14 +2,14 @@
 
 The Drugs data mart builds on Tuva Core's `core.medication` table to identify medication support and payer-paid savings opportunities. It replaces the pharmacy mart included in Tuva Core through v0.18.0.
 
-| Use case | What it answers | Drug / condition coverage | CodeRx Open | CodeRx Enterprise |
-| --- | --- | --- | --- | --- |
-| **Brand vs. Generic** | Who currently uses a brand with a generic alternative, and what could the payer save? | <ul><li>Open: 21,440 drug products¹</li><li>Enterprise: 66,471 drug products¹</li></ul> | Available | Available |
-| **Needs Refill** | Who may need a refill soon or is recently overdue? | <ul><li>7 chronic conditions</li><li>Open: 21,440 drug products¹</li><li>Enterprise: 66,471 drug products¹</li></ul> | Available | Available |
-| **Open Drug Gaps** | Who has a documented condition but no related dispensing in the past year? | <ul><li>68 Tuva-grouper conditions</li></ul> | Available | Available |
-| **Drug Episodes** | What are the start and end dates of a course of a drug? | <ul><li>Enterprise: 66,471 drug products¹</li><li>Grouped by complete ingredient combination and dose form</li></ul> | Requires Enterprise | Available |
+The evaluated CodeRx Open annual snapshot contains about **21,000 active, prescribable drug products**. Enterprise contains about **66,000 products**, including historical and inactive products that help identify drugs in older claims. Catalog sizes vary by snapshot. Enterprise also supplies the ingredient-combination and dose-form fields used to build Drug Episodes.
 
-¹ Product counts describe the evaluated CodeRx catalog snapshots, not fixed coverage guarantees, counts of eligible switching candidates, or counts of distinct ingredients or episode groups.
+| Use case | What it answers | CodeRx Open | CodeRx Enterprise |
+| --- | --- | --- | --- |
+| **Brand vs. Generic** | Who currently uses a brand with a generic alternative, and what could the payer save? | Yes | Yes |
+| **Needs Refill** | Who may need a refill soon or is recently overdue? | Yes | Yes |
+| **Open Drug Gaps** | Who has a documented condition but no related dispensing in the past year? | Yes | Yes |
+| **Drug Episodes** | What are the start and end dates of a course of a drug? | No | Yes |
 
 - Refill reporting covers Type 2 Diabetes, Hypertension, Coronary Artery Disease, COPD, Asthma, Heart Failure, and Atrial Fibrillation and Flutter.
 - Drug gaps cover 68 Tuva-grouper conditions across cardiovascular, metabolic, mental health, neurologic, respiratory, gastrointestinal and other condition families. The [versioned condition rules](seeds/drugs__condition_rule.csv) define the complete scope.
@@ -40,7 +40,7 @@ dbt deps
 dbt build --select +package:drugs --indirect-selection cautious
 ```
 
-This is the Drugs 1.0 development branch; a Drugs 1.0 release has not been published. For local Snowflake development, install the versions in [requirements-snowflake.txt](requirements-snowflake.txt).
+The example pins the tested package revisions. For Snowflake, install the versions in [requirements-snowflake.txt](requirements-snowflake.txt).
 
 Open terminology loads through Tuva Core. To use purchased Enterprise data, follow the [CodeRx Drug Database setup](https://www.thetuvaproject.com/coderx), load the full `coderx.packages`, `coderx.drugs` and `coderx.classes` tables in the target database, and set `use_coderx_enterprise: true` as a YAML boolean. Missing required Enterprise tables or columns produce an error; the package does not substitute Open data. No licensed CodeRx data is distributed in this repository.
 
