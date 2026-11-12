@@ -37,5 +37,7 @@ select person_id,data_source,condition_code,count(*) as prior_condition_fill_cou
  max(case when selected_refill_fill_flag=1 then therapy_id end) as latest_maintenance_therapy_id,
  max(case when selected_refill_fill_flag=1 then dispensing_date end) as latest_maintenance_dispensing_date,
  max(case when selected_refill_fill_flag=1 then case when refill_qualifying_class_flag=1 then 'qualifying' else 'possible' end end) as refill_class_confidence,
- max(file_date) as treatment_evidence_file_date,max(ingest_datetime) as treatment_evidence_ingest_datetime
+ -- Evidence freshness belongs to the selected due-date fill, including NULLs.
+ max(case when selected_refill_fill_flag=1 then file_date end) as treatment_evidence_file_date,
+ max(case when selected_refill_fill_flag=1 then ingest_datetime end) as treatment_evidence_ingest_datetime
 from marked group by person_id,data_source,condition_code

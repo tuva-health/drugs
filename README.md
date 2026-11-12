@@ -50,9 +50,11 @@ The package requests the custom schema `drugs`, or `<tuva_schema_prefix>_drugs` 
 
 ### 1. Brand vs. Generic
 
-`brand_generic_opportunity` lists current brand users with an active, prescribable generic sharing the same CodeRx clinical drug: ingredient, strength and form. Each source/patient/clinical drug appears once. This is a candidate for clinical and formulary review, not a therapeutic-equivalence determination.
+`brand_generic_opportunity` lists current brand users, including products without a catalog generic. Filter `generic_available_flag = 1` for switching candidates; `brand_generic_summary` already applies this filter. Each source/patient/clinical drug appears once. Alternatives share the same CodeRx clinical drug: ingredient, strength and form. They require clinical and formulary review, not an assumption of therapeutic equivalence.
 
 Package-level availability and generic price benchmarks require canonical 11-digit NDCs. Core's RxNorm fallback can support product, class and episode mapping, but does not reconstruct package-level marketing or pricing evidence.
+
+Enterprise also counts products explicitly labeled `NDA AUTHORIZED GENERIC`. In `generic_alternative`, `alternative_basis = 'active_authorized_generic_same_clinical_drug'` identifies these separately from ANDA candidates and baseline nonbrand matches. Active/prescribable, marketing-date and same-clinical-drug checks still apply.
 
 Savings use **payer-paid amount only**. The benchmark is the median generic paid amount per unit over the previous 90 days, matching source, payer, plan, clinical drug and quantity per supply day. The default requires at least three claims from two patients. Current use and pricing require usable days supply.
 

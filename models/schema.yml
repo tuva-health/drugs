@@ -546,8 +546,8 @@ models:
   - name: clinical_drug_name
     description: Name of the matching clinical product, not a certification of therapeutic equivalence.
   - name: alternative_basis
-    description: Explains whether the catalog match used baseline active nonbrand status or known ANDA
-      marketing category.
+    description: Explains whether the catalog match used baseline active nonbrand status, a known ANDA
+      marketing category, or an explicit NDA authorized-generic category.
   config: *drugs_schema
 - name: drugs__brand_generic_opportunity
   description: One current brand per source/person/clinical product, with availability separate from priceability

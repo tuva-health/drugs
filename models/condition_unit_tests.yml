@@ -283,8 +283,8 @@ unit_tests:
     rows: 'select cast(''old90'' as varchar) as medication_id, cast(''repeat'' as varchar) as person_id, cast(''a''
       as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''old90
       name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-08-20'' as date) as
-      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
-      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-08-21''
+      as date) as file_date, cast(''2026-08-22 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
       as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
       cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
       as refill_qualifying_class_flag, cast(''2026-11-17'' as date) as supply_end_date, cast(1 as integer) as active_supply_flag
@@ -294,8 +294,8 @@ unit_tests:
       select cast(''new30'' as varchar) as medication_id, cast(''repeat'' as varchar) as person_id, cast(''a'' as
       varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''new30
       name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
-      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
-      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-10-02''
+      as date) as file_date, cast(''2026-10-03 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
       as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
       cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
       as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
@@ -305,8 +305,8 @@ unit_tests:
       select cast(''rescue'' as varchar) as medication_id, cast(''repeat'' as varchar) as person_id, cast(''a''
       as varchar) as data_source, cast(''rescue'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''rescue
       name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-01'' as date) as
-      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
-      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-10''
+      as date) as file_date, cast(''2026-11-11 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
       as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
       cast(0 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(0 as integer)
       as refill_qualifying_class_flag, cast(''2026-11-30'' as date) as supply_end_date, cast(1 as integer) as active_supply_flag
@@ -420,7 +420,40 @@ unit_tests:
       cast(''asthma'' as varchar) as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer)
       as possible_class_flag, cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag,
       cast(1 as integer) as refill_qualifying_class_flag, cast(null as date) as supply_end_date, cast(0 as integer)
-      as active_supply_flag'
+      as active_supply_flag
+
+      union all
+
+      select cast(''old90'' as varchar) as medication_id, cast(''repeat_null'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''old90
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-08-20'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(null
+      as date) as file_date, cast(null as timestamp) as ingest_datetime, cast(''asthma'' as varchar) as condition_code,
+      cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag, cast(1 as integer)
+      as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer) as refill_qualifying_class_flag,
+      cast(''2026-11-17'' as date) as supply_end_date, cast(1 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''new30'' as varchar) as medication_id, cast(''repeat_null'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''new30
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-10-02''
+      as date) as file_date, cast(''2026-10-03 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''rescue'' as varchar) as medication_id, cast(''repeat_null'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''rescue'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''rescue
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-10''
+      as date) as file_date, cast(''2026-11-11 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(0 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(0 as integer)
+      as refill_qualifying_class_flag, cast(''2026-11-30'' as date) as supply_end_date, cast(1 as integer) as active_supply_flag'
   expect:
     rows:
     - person_id: repeat
@@ -430,6 +463,8 @@ unit_tests:
       maintenance_supply_end_date: '2026-11-17'
       refill_class_confidence: qualifying
       unknown_duration_flag: 0
+      treatment_evidence_file_date: '2026-08-21'
+      treatment_evidence_ingest_datetime: '2026-08-22 02:00:00'
     - person_id: different
       data_source: a
       maintenance_fill_dates: 0
@@ -437,6 +472,8 @@ unit_tests:
       maintenance_supply_end_date: null
       refill_class_confidence: null
       unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
     - person_id: same_date
       data_source: a
       maintenance_fill_dates: 0
@@ -444,6 +481,8 @@ unit_tests:
       maintenance_supply_end_date: null
       refill_class_confidence: null
       unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
     - person_id: mixed
       data_source: a
       maintenance_fill_dates: 2
@@ -451,6 +490,8 @@ unit_tests:
       maintenance_supply_end_date: '2026-10-30'
       refill_class_confidence: possible
       unknown_duration_flag: 0
+      treatment_evidence_file_date: '2026-11-11'
+      treatment_evidence_ingest_datetime: '2026-11-11 00:00:00'
     - person_id: split_source
       data_source: a
       maintenance_fill_dates: 0
@@ -458,6 +499,8 @@ unit_tests:
       maintenance_supply_end_date: null
       refill_class_confidence: null
       unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
     - person_id: split_source
       data_source: b
       maintenance_fill_dates: 0
@@ -465,6 +508,8 @@ unit_tests:
       maintenance_supply_end_date: null
       refill_class_confidence: null
       unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
     - person_id: unknown
       data_source: a
       maintenance_fill_dates: 0
@@ -472,6 +517,17 @@ unit_tests:
       maintenance_supply_end_date: null
       refill_class_confidence: null
       unknown_duration_flag: 1
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
+    - person_id: repeat_null
+      data_source: a
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: old90
+      maintenance_supply_end_date: '2026-11-17'
+      refill_class_confidence: qualifying
+      unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
 - name: annual_gap_priority_unknown_records_and_source_identity
   model: drugs__condition_status
   overrides:

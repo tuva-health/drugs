@@ -21,6 +21,13 @@ known supply. Reports include condition denominators and percentages, with the
 fill supporting each estimated due date. Brand-to-generic estimates use payer-paid
 amounts and show priced and unpriced candidates separately.
 
+Refill evidence timestamps now follow the same selected fill as the due date,
+retaining missing values rather than borrowing fresher dates from other fills.
+Enterprise generic candidates and price benchmarks include explicitly labeled
+NDA authorized generics, with a distinct alternative basis. Documentation
+clarifies that the detail opportunity table retains brands without a catalog
+generic; switching candidates require `generic_available_flag = 1`.
+
 Episodes now follow the complete CodeRx ingredient combination and dose form,
 independent of strength. Combination products are not split into atomic
 ingredients. The default permissible gap remains 30 uncovered days.
