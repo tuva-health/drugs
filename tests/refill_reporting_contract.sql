@@ -2,8 +2,8 @@
 -- uncertain/no-treatment patients remain included within observed feeds.
 with population as (
  select assessment_date,data_source,condition_code,
- sum(case when deceased_flag=0 and source_latest_fill_date is not null then 1 else 0 end) as denominator,
- sum(case when deceased_flag=0 and source_latest_fill_date is not null and needs_refill_flag=1 then 1 else 0 end) as numerator
+ sum(case when refill_condition_eligible_flag=1 and deceased_flag=0 and source_latest_fill_date is not null then 1 else 0 end) as denominator,
+ sum(case when refill_condition_eligible_flag=1 and deceased_flag=0 and source_latest_fill_date is not null and needs_refill_flag=1 then 1 else 0 end) as numerator
  from {{ ref('drugs__condition_status') }}
  group by assessment_date,data_source,condition_code
 )

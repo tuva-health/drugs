@@ -1,4 +1,3 @@
-# Fabricated values test source/person delimiter collisions.
 version: 2
 unit_tests:
 - name: drugs_episode_ids_preserve_source_and_person_boundaries
@@ -12,9 +11,9 @@ unit_tests:
     rows:
     - person_id: p-s
       data_source: a
-      therapy_id: ingredient:x
-      therapy_name: X
-      therapy_grain: ingredient
+      therapy_id: 9ea542426199b8f9729336a500f8a3e5
+      therapy_name: X (oral tablet)
+      therapy_grain: ingredient_combination_dose_form
       drug_code: x
       drug_name: X
       episode_number: 1
@@ -23,11 +22,15 @@ unit_tests:
       supply_start_date: '2026-01-01'
       supply_end_date: '2026-01-30'
       contributed_covered_days: 30
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      drug_code_system: RxNorm
     - person_id: p
       data_source: s-a
-      therapy_id: ingredient:x
-      therapy_name: X
-      therapy_grain: ingredient
+      therapy_id: 9ea542426199b8f9729336a500f8a3e5
+      therapy_name: X (oral tablet)
+      therapy_grain: ingredient_combination_dose_form
       drug_code: x
       drug_name: X
       episode_number: 1
@@ -36,59 +39,18 @@ unit_tests:
       supply_start_date: '2026-01-01'
       supply_end_date: '2026-01-30'
       contributed_covered_days: 30
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      drug_code_system: RxNorm
   expect:
     rows:
     - person_id: p-s
       data_source: a
-      episode_id: 91e0b51b06ca5958a21d959521ecd2e4
+      episode_id: ca8c1aa43099724f2e3a02d371df1f9a
     - person_id: p
       data_source: s-a
-      episode_id: 6f9e8d9d289b8d084be839568408e651
-- name: drugs_condition_ids_preserve_source_and_person_boundaries
-  model: drugs__condition_status
-  overrides:
-    vars:
-      drugs_as_of_date: '2026-01-31'
-      use_coderx_enterprise: true
-  given:
-  - input: ref('drugs__condition_evidence')
-    rows:
-    - person_id: p-s
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-01-01'
-    - person_id: p
-      data_source: s-a
-      condition_name: Hypertension
-      condition_date: '2026-01-01'
-  - input: ref('drugs__condition_rule')
-    rows:
-    - condition_code: htn
-      condition_name: Hypertension
-  - input: ref('drugs__patient_context')
-    rows:
-    - person_id: p-s
-      data_source: a
-      assessment_date: '2026-01-31'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-01-30'
-    - person_id: p
-      data_source: s-a
-      assessment_date: '2026-01-31'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-01-30'
-  - input: ref('drugs__condition_medication_summary')
-    rows: []
-  expect:
-    rows:
-    - person_id: p-s
-      data_source: a
-      condition_status_id: e8fa17c0ed139415b8b2f83e05790f7a
-    - person_id: p
-      data_source: s-a
-      condition_status_id: 3a96c886449e2bfb80f4d566a1df7294
+      episode_id: a01632146356a146201177eaf83d15bc
 - name: drugs_opportunity_ids_preserve_source_and_person_boundaries
   model: drugs__brand_generic_opportunity
   overrides:

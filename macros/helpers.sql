@@ -25,8 +25,3 @@
     cast(current_timestamp as date)
   {% endif %}
 {% endmacro %}
-
-{% macro drugs_float_type() %}
-  {# Spark FLOAT is 32-bit; decomposition must retain cent-level reconciliation. #}
-  {{ return('double' if target.type in ['databricks', 'spark'] else dbt.type_float()) }}
-{% endmacro %}

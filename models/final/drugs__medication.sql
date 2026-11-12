@@ -10,8 +10,8 @@ with primary_class as (
         coalesce(c.ingest_datetime,m.ingest_datetime) as ingest_datetime,
         {{ drugs_optional_column(ref('core__pharmacy_claim'), 'file_date', 'c', 'date') }} as file_date,
         c.member_month_id,
-        p.drug_id,d.drug_name,d.clinical_drug_id,d.clinical_drug_name,
-        d.ingredient_id,d.ingredient_name,d.dose_form_name,
+        d.drug_id,d.drug_name,d.clinical_drug_id,d.clinical_drug_name,
+        d.ingredient_id,d.ingredient_name,d.ingredient_type,d.dose_form_id,d.dose_form_name,
         coalesce(p.brand_flag,d.brand_flag) as brand_flag,p.marketing_category,
         coalesce(d.enterprise_drug_details_enabled_flag,0) as enterprise_drug_details_enabled_flag,
         coalesce(p.enterprise_marketing_enabled_flag,0) as enterprise_marketing_enabled_flag,
@@ -19,9 +19,10 @@ with primary_class as (
         d.terminology_tier,
         cl.atc_4_code as primary_atc_4_code,cl.atc_4_name as primary_atc_4_name,
         case when d.clinical_drug_id is not null then concat('clinical:',d.clinical_drug_id)
+             when d.drug_id is not null then concat('rxnorm:',d.drug_id)
              else concat('ndc:',m.ndc_code) end as therapy_id,
         coalesce(d.clinical_drug_name,d.drug_name,m.ndc_description) as therapy_name,
-        case when d.clinical_drug_id is not null then 'clinical_drug' else 'ndc' end as therapy_grain,
+        case when d.clinical_drug_id is not null then 'clinical_drug' when d.drug_id is not null then 'rxnorm_product' else 'ndc' end as therapy_grain,
         
         case when m.dispensing_date is null then 'missing_dispensing_date'
              when m.dispensing_date > {{ drugs_as_of() }} then 'future_dispensing_date'
@@ -29,15 +30,15 @@ with primary_class as (
              when m.days_supply <= 0 or m.days_supply <> floor(m.days_supply) then 'nonpositive_days_supply'
              when m.days_supply > 365 then 'days_supply_above_365'
              when m.quantity <= 0 then 'nonpositive_quantity'
-             when m.ndc_code is null then 'missing_drug_code'
+             when m.ndc_code is null and d.drug_id is null then 'missing_drug_code'
              else 'usable' end as exposure_status,
-        cast(case when p.drug_id is not null then 1 else 0 end as {{ dbt.type_int() }}) as terminology_matched_flag
+        cast(case when d.drug_id is not null then 1 else 0 end as {{ dbt.type_int() }}) as terminology_matched_flag
  from {{ ref('core__medication') }} m
  left join {{ ref('core__pharmacy_claim') }} c
    on m.medication_id=c.pharmacy_claim_id and m.data_source=c.data_source and m.person_id=c.person_id
  left join {{ ref('drugs__stg_packages') }} p on m.ndc_code=p.ndc_code
- left join {{ ref('drugs__stg_drugs') }} d on p.drug_id=d.drug_id
- left join primary_class cl on p.drug_id=cl.drug_id and cl.class_rank=1
+ left join {{ ref('drugs__stg_drugs') }} d on coalesce(p.drug_id,m.rxnorm_code)=d.drug_id
+ left join primary_class cl on d.drug_id=cl.drug_id and cl.class_rank=1
  where m.source_type='claims'
 )
 select *,case when exposure_status='usable' then days_supply/30.0 end as thirty_day_equivalent_fills

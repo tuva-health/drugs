@@ -9,12 +9,16 @@ select
     {{ drugs_flag('active') }} as active_flag,
     {{ drugs_flag('prescribable') }} as prescribable_flag,
     {% if details %}
-    cast(ingredient_id as {{ dbt.type_string() }}) as ingredient_id,
-    ingredient_name,
-    dose_form_name,
+    nullif(trim(cast(ingredient_id as {{ dbt.type_string() }})), '') as ingredient_id,
+    nullif(trim(ingredient_name), '') as ingredient_name,
+    nullif(trim(ingredient_type), '') as ingredient_type,
+    nullif(trim(cast(dose_form_id as {{ dbt.type_string() }})), '') as dose_form_id,
+    nullif(trim(dose_form_name), '') as dose_form_name,
     {% else %}
     cast(null as {{ dbt.type_string() }}) as ingredient_id,
     cast(null as {{ dbt.type_string() }}) as ingredient_name,
+    cast(null as {{ dbt.type_string() }}) as ingredient_type,
+    cast(null as {{ dbt.type_string() }}) as dose_form_id,
     cast(null as {{ dbt.type_string() }}) as dose_form_name,
     {% endif %}
     cast({{ 1 if details else 0 }} as {{ dbt.type_int() }}) as enterprise_drug_details_enabled_flag,

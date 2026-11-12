@@ -14,7 +14,7 @@ with population as (
 ), rx as (
  select person_id,data_source,max(file_date) as patient_rx_file_date,max(ingest_datetime) as patient_rx_ingest_datetime,
  max(case when dispensing_date<={{ drugs_as_of() }} then dispensing_date end) as patient_latest_fill_date,
- max(case when dispensing_date between {{ dbt.dateadd('day',-var('drugs_uncertain_exposure_days')+1,drugs_as_of()) }} and {{ drugs_as_of() }} and drug_id is null then 1 else 0 end) as recent_unmapped_drug_flag
+ max(case when dispensing_date between {{ dbt.dateadd('day',-364,drugs_as_of()) }} and {{ drugs_as_of() }} and drug_id is null then 1 else 0 end) as recent_unmapped_drug_flag
  from {{ ref('drugs__medication') }} group by person_id,data_source
 ), context as (
  select p.person_id,p.data_source,{{ drugs_as_of() }} as assessment_date,coalesce(d.deceased_flag,0) as deceased_flag,

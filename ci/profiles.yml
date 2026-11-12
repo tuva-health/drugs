@@ -6,7 +6,7 @@ default:
       type: snowflake
       account: parse-only.invalid
       user: parse_only
-      password: parse-only-placeholder
+      authenticator: externalbrowser
       role: parse_only
       warehouse: parse_only
       database: parse_only

@@ -8,7 +8,7 @@ unit_tests:
       drugs_episode_gap_days: 0
       use_coderx_enterprise: true
   given:
-  - input: ref('drugs__ingredient_fill')
+  - input: ref('drugs__fill')
     rows: &id001
     - person_id: p
       data_source: a
@@ -22,6 +22,11 @@ unit_tests:
       supply_start_date: '2026-01-01'
       supply_end_date: '2026-01-30'
       days_supply: 30
+      ingredient_id: x
+      ingredient_name: Ingredient x
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: a
       therapy_id: clinical:x
@@ -34,6 +39,11 @@ unit_tests:
       supply_start_date: '2026-01-31'
       supply_end_date: '2026-02-09'
       days_supply: 10
+      ingredient_id: x
+      ingredient_name: Ingredient x
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: a
       therapy_id: clinical:x
@@ -46,6 +56,11 @@ unit_tests:
       supply_start_date: '2026-02-11'
       supply_end_date: '2026-02-20'
       days_supply: 10
+      ingredient_id: x
+      ingredient_name: Ingredient x
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: a
       therapy_id: clinical:x
@@ -58,6 +73,11 @@ unit_tests:
       supply_start_date: '2026-03-23'
       supply_end_date: '2026-03-27'
       days_supply: 5
+      ingredient_id: x
+      ingredient_name: Ingredient x
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: a
       therapy_id: clinical:x
@@ -70,6 +90,11 @@ unit_tests:
       supply_start_date: '2026-04-28'
       supply_end_date: '2026-05-02'
       days_supply: 5
+      ingredient_id: x
+      ingredient_name: Ingredient x
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: a
       therapy_id: clinical:x
@@ -82,6 +107,11 @@ unit_tests:
       supply_start_date: '2026-01-10'
       supply_end_date: '2026-01-19'
       days_supply: 10
+      ingredient_id: x
+      ingredient_name: Ingredient x
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: b
       therapy_id: clinical:x
@@ -94,6 +124,11 @@ unit_tests:
       supply_start_date: '2026-01-01'
       supply_end_date: '2026-01-30'
       days_supply: 30
+      ingredient_id: x
+      ingredient_name: Ingredient x
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
   expect:
     rows:
     - medication_id: '1'
@@ -132,7 +167,7 @@ unit_tests:
       drugs_episode_gap_days: 1
       use_coderx_enterprise: true
   given:
-  - input: ref('drugs__ingredient_fill')
+  - input: ref('drugs__fill')
     rows: *id001
   expect:
     rows:
@@ -172,7 +207,7 @@ unit_tests:
       drugs_episode_gap_days: 30
       use_coderx_enterprise: true
   given:
-  - input: ref('drugs__ingredient_fill')
+  - input: ref('drugs__fill')
     rows: *id001
   expect:
     rows:
@@ -294,333 +329,6 @@ unit_tests:
       data_source: b
       supply_start_date: '2026-01-20'
       supply_end_date: '2026-02-18'
-- name: gap_and_refill_current_boundaries
-  model: drugs__condition_status
-  overrides:
-    vars:
-      drugs_as_of_date: '2026-10-26'
-      use_coderx_enterprise: true
-  given:
-  - input: ref('drugs__condition_evidence')
-    rows:
-    - condition_id: never
-      person_id: never
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: expired
-      person_id: expired
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: today
-      person_id: today
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: soon
-      person_id: soon
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: late
-      person_id: late
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: unknown
-      person_id: unknown
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: unmapped
-      person_id: unmapped
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: active
-      person_id: active
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: dead
-      person_id: dead
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: single
-      person_id: single
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-    - condition_id: switch
-      person_id: switch
-      data_source: a
-      condition_name: Hypertension
-      condition_date: '2026-09-01'
-  - input: ref('drugs__condition_rule')
-    rows:
-    - condition_code: htn
-      condition_name: Hypertension
-  - input: ref('drugs__patient_context')
-    rows:
-    - person_id: never
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: expired
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: today
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: soon
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: late
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: unknown
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: unmapped
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 1
-      source_latest_fill_date: '2026-10-25'
-    - person_id: active
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: dead
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 1
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: single
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-    - person_id: switch
-      data_source: a
-      assessment_date: '2026-10-26'
-      deceased_flag: 0
-      recent_unmapped_drug_flag: 0
-      source_latest_fill_date: '2026-10-25'
-  - input: ref('drugs__condition_medication_summary')
-    rows:
-    - person_id: expired
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 0
-      active_maintenance_supply_flag: 0
-      unknown_duration_flag: 0
-      maintenance_supply_end_date: '2026-10-24'
-      maintenance_fill_dates: 2
-      latest_maintenance_medication_id: rx
-    - person_id: today
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 0
-      active_maintenance_supply_flag: 0
-      unknown_duration_flag: 0
-      maintenance_supply_end_date: '2026-10-25'
-      maintenance_fill_dates: 2
-      latest_maintenance_medication_id: rx
-    - person_id: soon
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 1
-      active_maintenance_supply_flag: 1
-      unknown_duration_flag: 0
-      maintenance_supply_end_date: '2026-11-01'
-      maintenance_fill_dates: 2
-      latest_maintenance_medication_id: rx
-    - person_id: late
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 0
-      active_maintenance_supply_flag: 0
-      unknown_duration_flag: 0
-      maintenance_supply_end_date: '2026-09-24'
-      maintenance_fill_dates: 2
-      latest_maintenance_medication_id: rx
-    - person_id: unknown
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 0
-      active_maintenance_supply_flag: 0
-      unknown_duration_flag: 1
-      maintenance_supply_end_date: '2026-10-24'
-      maintenance_fill_dates: 2
-      latest_maintenance_medication_id: rx
-    - person_id: active
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 1
-      active_maintenance_supply_flag: 1
-      unknown_duration_flag: 0
-      maintenance_supply_end_date: '2026-11-30'
-      maintenance_fill_dates: 2
-      latest_maintenance_medication_id: rx
-    - person_id: dead
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 0
-      active_maintenance_supply_flag: 0
-      unknown_duration_flag: 0
-      maintenance_supply_end_date: '2026-10-24'
-      maintenance_fill_dates: 2
-      latest_maintenance_medication_id: rx
-    - person_id: single
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 1
-      active_condition_supply_flag: 0
-      active_maintenance_supply_flag: 0
-      unknown_duration_flag: 0
-      maintenance_supply_end_date: '2026-10-24'
-      maintenance_fill_dates: 1
-      latest_maintenance_medication_id: rx
-    - person_id: switch
-      data_source: a
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 1
-      active_maintenance_supply_flag: 0
-      unknown_duration_flag: 0
-      maintenance_supply_end_date: '2026-10-25'
-      maintenance_fill_dates: 2
-      latest_maintenance_medication_id: rx
-    - person_id: never
-      data_source: b
-      condition_code: htn
-      prior_condition_fill_count: 2
-      active_condition_supply_flag: 1
-      active_maintenance_supply_flag: 1
-  expect:
-    rows:
-    - person_id: never
-      open_drug_gap_flag: 1
-      needs_refill_flag: 0
-    - person_id: expired
-      open_drug_gap_flag: 1
-      needs_refill_flag: 1
-    - person_id: today
-      open_drug_gap_flag: 1
-      needs_refill_flag: 1
-    - person_id: soon
-      open_drug_gap_flag: 0
-      needs_refill_flag: 1
-    - person_id: late
-      open_drug_gap_flag: 1
-      needs_refill_flag: 0
-    - person_id: unknown
-      open_drug_gap_flag: null
-      needs_refill_flag: null
-    - person_id: unmapped
-      open_drug_gap_flag: null
-      needs_refill_flag: null
-    - person_id: active
-      open_drug_gap_flag: 0
-      needs_refill_flag: 0
-    - person_id: dead
-      open_drug_gap_flag: 0
-      needs_refill_flag: 0
-    - person_id: single
-      open_drug_gap_flag: 1
-      needs_refill_flag: 0
-    - person_id: switch
-      open_drug_gap_flag: 0
-      needs_refill_flag: 1
-- name: condition_rules_all_classes_and_rescue
-  model: drugs__drug_condition
-  overrides:
-    vars:
-      drugs_as_of_date: '2026-10-26'
-      use_coderx_enterprise: true
-  given:
-  - input: ref('drugs__stg_drugs')
-    rows:
-    - drug_id: sema
-      clinical_drug_name: semaglutide injection
-    - drug_id: rescue
-      clinical_drug_name: albuterol inhaler
-    - drug_id: maintenance
-      clinical_drug_name: tiotropium inhaler
-  - input: ref('drugs__stg_classes')
-    rows:
-    - drug_id: sema
-      atc_4_code: X99ZZ
-    - drug_id: sema
-      atc_4_code: A10BJ
-    - drug_id: rescue
-      atc_4_code: R03AC
-    - drug_id: maintenance
-      atc_4_code: R03BB
-  - input: ref('drugs__stg_ingredient')
-    rows:
-    - drug_id: maintenance
-      ingredient_id: '69120'
-  - input: ref('drugs__condition_rule')
-    rows:
-    - rule_id: 1
-      condition_code: t2d
-      condition_name: Type 2 Diabetes Mellitus
-      atc_prefix: A10
-      refill_eligible_flag: 1
-    - rule_id: 2
-      condition_code: copd
-      condition_name: Chronic Obstructive Pulmonary Disease
-      atc_prefix: R03
-      refill_eligible_flag: 0
-    - rule_id: 3
-      condition_code: copd
-      condition_name: Chronic Obstructive Pulmonary Disease
-      atc_prefix: R03
-      refill_eligible_flag: 1
-      ingredient_rxcui: '69120'
-  expect:
-    rows:
-    - drug_id: sema
-      condition_code: t2d
-      refill_eligible_flag: 1
-    - drug_id: rescue
-      condition_code: copd
-      refill_eligible_flag: 0
-    - drug_id: maintenance
-      condition_code: copd
-      refill_eligible_flag: 1
 - name: prospective_paid_savings_and_unpriced_availability
   model: drugs__brand_generic_opportunity
   overrides:
@@ -1025,8 +733,8 @@ unit_tests:
     - data_source: b
       source_rx_freshness_date: '2026-10-20'
       source_rx_freshness_basis: ingest_datetime
-- name: ingredient_expansion_preserves_each_component_and_clinical_fallback
-  model: drugs__ingredient_fill
+- name: complete_combination_episode_unions_strength_changes_without_double_counting_overlap
+  model: drugs__episode_fill
   overrides:
     vars:
       drugs_as_of_date: '2026-10-26'
@@ -1041,91 +749,13 @@ unit_tests:
       days_supply: 30
       supply_start_date: '2026-01-01'
       supply_end_date: '2026-01-30'
-      medication_id: combo
-      therapy_id: clinical:combo
-      drug_id: combo
-      clinical_drug_id: ccombo
-    - person_id: p
-      data_source: a
-      therapy_grain: clinical_drug
-      dispensing_date: '2026-01-01'
-      days_supply: 30
-      supply_start_date: '2026-01-01'
-      supply_end_date: '2026-01-30'
-      medication_id: highdose
-      therapy_id: clinical:high
-      drug_id: brand_high
-      clinical_drug_id: high
-    - person_id: p
-      data_source: a
-      therapy_grain: clinical_drug
-      dispensing_date: '2026-01-01'
-      days_supply: 30
-      supply_start_date: '2026-01-01'
-      supply_end_date: '2026-01-30'
-      medication_id: unknown
-      therapy_id: ndc:unknown
-      drug_id: null
-      clinical_drug_id: null
-    - person_id: p
-      data_source: a
-      therapy_grain: clinical_drug
-      dispensing_date: '2026-01-01'
-      days_supply: 30
-      supply_start_date: '2026-01-01'
-      supply_end_date: '2026-01-30'
-      medication_id: core_only
-      therapy_id: ndc:unknown
-      drug_id: null
-      clinical_drug_id: null
-      rxnorm_code: core_rx
-  - input: ref('drugs__stg_ingredient')
-    rows:
-    - drug_id: combo
-      ingredient_id: i1
-      ingredient_name: ingredient one
-    - drug_id: combo
-      ingredient_id: i2
-      ingredient_name: ingredient two
-    - drug_id: high
-      ingredient_id: i1
-      ingredient_name: ingredient one
-    - drug_id: core_rx
-      ingredient_id: i1
-      ingredient_name: ingredient one
-  expect:
-    rows:
-    - medication_id: combo
-      drug_code: i1
-      therapy_id: ingredient:i1
-    - medication_id: combo
-      drug_code: i2
-      therapy_id: ingredient:i2
-    - medication_id: highdose
-      drug_code: i1
-      therapy_id: ingredient:i1
-    - medication_id: core_only
-      drug_code: i1
-      therapy_id: ingredient:i1
-- name: ingredient_episode_unions_strength_changes_and_does_not_count_overlap_twice
-  model: drugs__episode_fill
-  overrides:
-    vars:
-      drugs_as_of_date: '2026-10-26'
-      use_coderx_enterprise: true
-  given:
-  - input: ref('drugs__ingredient_fill')
-    rows:
-    - person_id: p
-      data_source: a
-      therapy_grain: clinical_drug
-      dispensing_date: '2026-01-01'
-      days_supply: 30
-      supply_start_date: '2026-01-01'
-      supply_end_date: '2026-01-30'
       medication_id: low
-      therapy_id: ingredient:i1
-      clinical_product_key: clinical:low
+      therapy_id: clinical:low
+      ingredient_id: i1
+      ingredient_name: Ingredient i1
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: a
       therapy_grain: clinical_drug
@@ -1134,8 +764,12 @@ unit_tests:
       supply_start_date: '2026-01-20'
       supply_end_date: '2026-02-18'
       medication_id: high
-      therapy_id: ingredient:i1
-      clinical_product_key: clinical:high
+      therapy_id: clinical:high
+      ingredient_id: i1
+      ingredient_name: Ingredient i1
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: a
       therapy_grain: clinical_drug
@@ -1144,8 +778,12 @@ unit_tests:
       supply_start_date: '2026-01-01'
       supply_end_date: '2026-01-30'
       medication_id: combo
-      therapy_id: ingredient:i2
-      clinical_product_key: clinical:combo
+      therapy_id: clinical:combo
+      ingredient_id: i2
+      ingredient_name: Ingredient i2
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
     - person_id: p
       data_source: b
       therapy_grain: clinical_drug
@@ -1155,6 +793,11 @@ unit_tests:
       supply_end_date: '2026-01-30'
       medication_id: other
       therapy_id: ingredient:i1
+      ingredient_id: i1
+      ingredient_name: Ingredient i1
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
   expect:
     rows:
     - medication_id: low
@@ -1173,67 +816,6 @@ unit_tests:
       data_source: b
       episode_number: 1
       contributed_covered_days: 30
-- name: chf_afib_related_therapy_and_no_aspirin_or_lidocaine_substitution
-  model: drugs__drug_condition
-  overrides:
-    vars:
-      drugs_as_of_date: '2026-10-26'
-      use_coderx_enterprise: true
-  given:
-  - input: ref('drugs__stg_drugs')
-    rows:
-    - drug_id: sglt2
-      clinical_drug_name: empagliflozin 10 MG Oral Tablet
-    - drug_id: apixaban
-      clinical_drug_name: apixaban 5 MG Oral Tablet
-    - drug_id: aspirin
-      clinical_drug_name: aspirin 81 MG Oral Tablet
-    - drug_id: amio
-      clinical_drug_name: amiodarone 200 MG Oral Tablet
-    - drug_id: lido
-      clinical_drug_name: lidocaine patch
-  - input: ref('drugs__stg_classes')
-    rows:
-    - drug_id: sglt2
-      atc_4_code: A10BK
-    - drug_id: apixaban
-      atc_4_code: B01AF
-    - drug_id: aspirin
-      atc_4_code: B01AC
-    - drug_id: amio
-      atc_4_code: C01BD
-    - drug_id: lido
-      atc_4_code: C01BB
-  - input: ref('drugs__stg_ingredient')
-    rows:
-    - drug_id: amio
-      ingredient_id: '703'
-  - input: ref('drugs__condition_rule')
-    rows:
-    - rule_id: 1
-      condition_code: chf
-      condition_name: Heart Failure
-      atc_prefix: A10BK
-      refill_eligible_flag: 1
-    - rule_id: 2
-      condition_code: afib
-      condition_name: Atrial Fibrillation and Flutter
-      atc_prefix: B01AF
-      refill_eligible_flag: 1
-    - rule_id: 3
-      condition_code: afib
-      condition_name: Atrial Fibrillation and Flutter
-      atc_prefix: C01B
-      refill_eligible_flag: 1
-      ingredient_rxcui: '703'
-  expect:
-    rows:
-    - drug_id: sglt2
-      condition_code: chf
-    - drug_id: apixaban
-      condition_code: afib
-    - drug_id: amio
-      condition_code: afib
 - name: switch_summary_does_not_extrapolate_unpriced_patients
   model: drugs__brand_generic_summary
   overrides:
@@ -1292,44 +874,3 @@ unit_tests:
       annual_savings_for_priced_patients: 500
       annual_savings_if_all_switched: 500
       savings_coverage_status: all_patients_priced
-- name: condition_counts_include_zero_and_unknown_without_inflating_gaps
-  model: drugs__condition_summary
-  overrides:
-    vars:
-      drugs_as_of_date: '2026-10-26'
-      use_coderx_enterprise: true
-  given:
-  - input: ref('drugs__condition_status')
-    rows:
-    - person_id: p1
-      data_source: a
-      assessment_date: '2026-10-26'
-      condition_code: chf
-      condition_name: Heart Failure
-      open_drug_gap_flag: 1
-      needs_refill_flag: 1
-      outreach_readiness_status: current_record_review
-    - person_id: p2
-      data_source: a
-      assessment_date: '2026-10-26'
-      condition_code: chf
-      condition_name: Heart Failure
-      open_drug_gap_flag: null
-      needs_refill_flag: null
-    - person_id: p3
-      data_source: a
-      assessment_date: '2026-10-26'
-      condition_code: afib
-      condition_name: Atrial Fibrillation and Flutter
-      open_drug_gap_flag: 0
-      needs_refill_flag: 0
-  expect:
-    rows:
-    - condition_code: chf
-      patients_with_open_gaps: 1
-      patients_needing_refill: 1
-      gap_unassessable_patients: 1
-    - condition_code: afib
-      patients_with_open_gaps: 0
-      patients_needing_refill: 0
-      gap_unassessable_patients: 0

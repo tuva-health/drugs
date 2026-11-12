@@ -7,5 +7,5 @@ select c.condition_id,c.person_id,c.data_source,c.claim_id,c.condition_name,c.co
 from {{ ref('core__condition') }} c
 left join {{ ref('drugs__medical_claim_lineage') }} l on c.person_id=l.person_id and c.data_source=l.data_source and c.claim_id=l.claim_id
 where c.condition_name in (select distinct condition_name from {{ ref('drugs__condition_rule') }})
- and coalesce(c.recorded_date,c.onset_date) between {{ dbt.dateadd('day',-var('drugs_condition_lookback_days')+1,drugs_as_of()) }} and {{ drugs_as_of() }}
- and (c.resolved_date is null or c.resolved_date>{{ drugs_as_of() }})
+ and coalesce(c.recorded_date,c.onset_date) between {{ dbt.dateadd('day',-364,drugs_as_of()) }} and {{ drugs_as_of() }}
+ -- Resolved conditions and finite diseases remain valid annual evidence.

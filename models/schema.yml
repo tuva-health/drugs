@@ -1,11 +1,8 @@
 version: 2
 models:
 - name: drugs__medication
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Claims-derived Core medication with payer-paid and CodeRx enrichment;
-    one row per source/medication. Invalid durations remain with an exposure status.
+  description: Claims-derived Core medication with payer-paid and CodeRx enrichment; one row per source/medication.
+    Invalid durations remain with an exposure status.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -14,11 +11,11 @@ models:
         - medication_id
   columns:
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
     data_tests:
     - not_null
   - name: medication_id
-    description: "Core medication identifier, joined to pharmacy claims by medication ID, patient and source."
+    description: Core medication identifier, joined to pharmacy claims by medication ID, patient and source.
     data_tests:
     - not_null
   - name: enterprise_drug_details_enabled_flag
@@ -26,32 +23,42 @@ models:
   - name: enterprise_marketing_enabled_flag
     description: 1 when Enterprise package marketing columns are available and enabled.
   - name: marketing_screening_applied_flag
-    description: 1 when enabled marketing columns and a nonempty category are available for downstream screening. This medication-level flag does not confirm the product passed current-candidate checks.
+    description: 1 when enabled marketing columns and a nonempty category are available for downstream
+      screening. This medication-level flag does not confirm the product passed current-candidate checks.
   - name: person_id
-    description: "Patient identifier within data_source; not a cross-source person match."
+    description: Patient identifier within data_source; not a cross-source person match.
   - name: ndc_code
-    description: "Package-level NDC used to link the claims-derived Core medication to CodeRx."
+    description: Package-level NDC used to link the claims-derived Core medication to CodeRx.
   - name: drug_id
-    description: "CodeRx drug concept identifier for the mapped NDC; not necessarily an atomic ingredient."
+    description: CodeRx product RxCUI resolved through NDC, or the Core RxNorm code when no NDC mapping is available.
   - name: clinical_drug_id
-    description: "CodeRx clinical product identifier used for brand/generic comparisons at the same ingredient, strength and form."
+    description: CodeRx clinical product identifier used for brand/generic comparisons at the same ingredient,
+      strength and form.
   - name: days_supply
-    description: "Dispensed days supply from Core. Missing or invalid duration does not create estimated exposure."
+    description: Dispensed days supply from Core. Missing or invalid duration does not create estimated
+      exposure.
   - name: paid_amount
-    description: "Payer-paid pharmacy claim amount. Allowed, billed and patient cost-sharing amounts are not used for savings."
+    description: Payer-paid pharmacy claim amount. Allowed, billed and patient cost-sharing amounts are
+      not used for savings.
   - name: exposure_status
-    description: "Whether the claim has usable nonfuture dispensing and duration data. Unknown or invalid rows remain visible but do not create supply."
+    description: Whether the claim has usable nonfuture dispensing and duration data. Unknown or invalid
+      rows remain visible but do not create supply.
   - name: file_date
-    description: "Pharmacy source-file date retained separately from ingest_datetime."
+    description: Pharmacy source-file date retained separately from ingest_datetime.
   - name: ingest_datetime
-    description: "Pharmacy ingestion timestamp; does not replace an available source-file date for freshness."
+    description: Pharmacy ingestion timestamp; does not replace an available source-file date for freshness.
+  - name: ingredient_type
+    description: CodeRx ingredient concept type, including vendor composite types for packs.
+  - name: dose_form_id
+    description: CodeRx dose-form identifier used with ingredient_id to define an episode therapy.
+  - name: dose_form_name
+    description: CodeRx dose-form name.
+  config: &drugs_schema
+    schema: '{{ (var(''tuva_schema_prefix'') | trim ~ ''_'') if var(''tuva_schema_prefix'', none) is not
+      none and (var(''tuva_schema_prefix'') | trim) != '''' else '''' }}drugs'
 - name: drugs__drug_episode
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Enterprise-only source/person/atomic RxNorm ingredient episodes,
-    independent of strength, form and brand. Combination fills contribute to
-    each ingredient. The table retains its columns but is empty under Open.
+  description: Enterprise episodes by source, patient, complete CodeRx ingredient combination and dose
+    form. Strength changes remain in the same therapy. Empty with Open.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -59,61 +66,75 @@ models:
         - episode_id
   columns:
   - name: episode_id
-    description: "Deterministic key from source, patient, ingredient and observed episode start date."
+    description: Stable key from source, patient, ingredient-combination/dose-form therapy and observed
+      episode start.
     data_tests:
     - not_null
   - name: person_id
-    description: "Patient identifier within data_source; not a cross-source person match."
+    description: Patient identifier within data_source; not a cross-source person match.
     data_tests:
     - not_null
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
     data_tests:
     - not_null
   - name: drug_code
-    description: "Atomic RxNorm ingredient (IN) concept code. Combination products contribute one episode stream per ingredient."
+    description: CodeRx identifier for the complete ingredient combination. Ordinary IN/MIN groups use
+      RxNorm; packs may use a composite vendor identifier.
     data_tests:
     - not_null
   - name: drug_name
-    description: "Name of the atomic RxNorm ingredient, independent of strength, dosage form and brand."
+    description: CodeRx name of the complete ingredient combination, independent of strength and brand.
     data_tests:
     - not_null
   - name: start_date
-    description: "Inclusive first observed supply day in the ingredient episode; not proof of original treatment initiation."
+    description: Inclusive first observed supply date in the episode.
     data_tests:
     - not_null
   - name: end_date
-    description: "Inclusive last estimated supply day. The permissible gap is never appended to this date."
+    description: Inclusive last estimated supply day. The permissible gap is never appended to this date.
     data_tests:
     - not_null
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: drug_code_system
-    description: "RxNorm for ingredient episode codes."
+    description: RxNorm for IN/MIN ingredient groups; CodeRx ingredient group for composite vendor identifiers.
   - name: fill_count
-    description: "Number of ingredient-level contributing fills in this episode. Combination fills can contribute to multiple ingredient episodes."
+    description: Number of contributing dispensing rows. A combination fill contributes to one complete-combination
+      episode.
   - name: distinct_fill_dates
-    description: "Distinct dispensing dates among contributing fills."
+    description: Distinct dispensing dates among contributing fills.
   - name: permissible_gap_days
-    description: "Maximum uncovered days allowed between supply intervals before starting a new episode; default 30."
+    description: Maximum uncovered days allowed between supply intervals before starting a new episode;
+      default 30.
   - name: episode_span_days
-    description: "Inclusive calendar days between episode start and end, including uncovered days tolerated for continuity."
+    description: Inclusive calendar days between episode start and end, including uncovered days tolerated
+      for continuity.
   - name: covered_days
-    description: "Unioned days of estimated supply in the episode; overlapping fills are not double counted."
+    description: Unioned days of estimated supply in the episode; overlapping fills are not double counted.
   - name: uncovered_days
-    description: "Episode span minus covered days. Continuity tolerance does not turn these days into covered supply."
+    description: Episode span minus covered days. Continuity tolerance does not turn these days into covered
+      supply.
   - name: active_supply_flag
-    description: "1 only when an actual estimated fill interval covers assessment_date. Being within an episode grace period is insufficient."
+    description: 1 only when an actual estimated fill interval covers assessment_date. Being within an
+      episode grace period is insufficient.
   - name: restart_flag
-    description: "1 for an observed episode after the first ingredient episode for this source and patient; not a confirmed clinical restart."
+    description: 1 for an observed episode after the first for this source, patient and ingredient-combination/dose-form
+      therapy.
   - name: episode_end_status
-    description: "Describes supply relative to the assessment date. no_later_supply_observed is not confirmed discontinuation."
+    description: Describes supply relative to the assessment date. no_later_supply_observed is not confirmed
+      discontinuation.
+  - name: ingredient_type
+    description: CodeRx ingredient concept type, including vendor composite types for packs.
+  - name: dose_form_id
+    description: CodeRx dose-form identifier used with drug_code to define an episode therapy.
+  - name: dose_form_name
+    description: CodeRx dose-form name.
+  config: *drugs_schema
 - name: drugs__condition_evidence
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Enterprise-only unresolved recent Tuva-grouper diagnoses for the
-    seven configured conditions, including claim provenance. Empty under Open.
+  description: Core condition evidence for 68 reviewed conditions in the inclusive trailing 365 days.
+    Resolved conditions remain eligible for this annual evidence screen.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -122,39 +143,41 @@ models:
         - condition_id
   columns:
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
     data_tests:
     - not_null
   - name: condition_id
-    description: "Core condition record identifier, retained for patient-level evidence review."
+    description: Core condition record identifier, retained for patient-level evidence review.
     data_tests:
     - not_null
   - name: person_id
-    description: "Patient identifier within data_source; not a cross-source person match."
+    description: Patient identifier within data_source; not a cross-source person match.
   - name: claim_id
-    description: "Claim identifier used with source and patient to recover diagnosis provenance from Core medical claims."
+    description: Claim identifier used with source and patient to recover diagnosis provenance from Core
+      medical claims.
   - name: condition_name
-    description: "Exact Tuva condition grouper label matched to the versioned condition rules."
+    description: Exact Tuva condition grouper label matched to the versioned condition rules.
   - name: condition_family
-    description: "Tuva condition grouper family carried from Core."
+    description: Tuva condition grouper family carried from Core.
   - name: condition_date
-    description: "Core recorded_date, falling back to onset_date; must be within the configured lookback and not in the future."
+    description: Coalesced recorded/onset date within assessment_date minus 364 through assessment_date,
+      inclusive.
   - name: resolved_date
-    description: "Condition resolution date; records resolved on or before assessment_date do not qualify."
+    description: Recorded resolution date retained for review; does not exclude a condition observed within
+      the annual window.
   - name: diagnosis_code
-    description: "Normalized Core diagnosis code, falling back to source_code."
+    description: Normalized Core diagnosis code, falling back to source_code.
   - name: file_date
-    description: "Linked medical-claim source-file date, where available."
+    description: Linked medical-claim source-file date, where available.
   - name: ingest_datetime
-    description: "Condition ingestion timestamp, falling back to the linked medical-claim timestamp."
+    description: Condition ingestion timestamp, falling back to the linked medical-claim timestamp.
   - name: freshness_lineage
-    description: "Identifies direct Core condition ingestion evidence, recovered medical-claim lineage, or unavailable provenance."
+    description: Identifies direct Core condition ingestion evidence, recovered medical-claim lineage,
+      or unavailable provenance.
+  config: *drugs_schema
 - name: drugs__source_freshness
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Latest observed pharmacy file, ingest and service dates per source.
-    Not a certified claims completion date.
+  description: Latest observed pharmacy file, ingest and service dates per source. Not a certified claims
+    completion date.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -162,27 +185,27 @@ models:
         - data_source
   columns:
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
     data_tests:
     - not_null
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: source_rx_file_date
-    description: "Latest observed pharmacy source-file date for this source."
+    description: Latest observed pharmacy source-file date for this source.
   - name: source_rx_ingest_datetime
-    description: "Latest pharmacy ingestion timestamp, retained separately from file date."
+    description: Latest pharmacy ingestion timestamp, retained separately from file date.
   - name: source_latest_fill_date
-    description: "Latest dispensing date on or before assessment_date; not a certified claims-complete-through date."
+    description: Latest dispensing date on or before assessment_date; not a certified claims-complete-through
+      date.
   - name: source_rx_freshness_date
-    description: "Latest observed pharmacy file date for this source, falling back to ingestion date. A recent reload does not replace an available older file date."
+    description: Latest observed pharmacy file date for this source, falling back to ingestion date. A
+      recent reload does not replace an available older file date.
   - name: source_rx_freshness_basis
-    description: "file_date, ingest_datetime, or unavailable; identifies the displayed freshness evidence."
+    description: file_date, ingest_datetime, or unavailable; identifies the displayed freshness evidence.
+  config: *drugs_schema
 - name: drugs__patient_context
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Source-scoped patient context, enrollment and record/source freshness
-    for worklist interpretation.
+  description: Source-scoped patient context, enrollment and record/source freshness for worklist interpretation.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -191,38 +214,42 @@ models:
         - person_id
   columns:
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
     data_tests:
     - not_null
   - name: person_id
-    description: "Patient identifier within data_source; not a cross-source person match."
+    description: Patient identifier within data_source; not a cross-source person match.
     data_tests:
     - not_null
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: patient_rx_freshness_date
-    description: "Latest observed patient pharmacy file date, falling back to ingestion date when no file date is available. Does not certify a complete claims feed."
+    description: Latest observed patient pharmacy file date, falling back to ingestion date when no file
+      date is available. Does not certify a complete claims feed.
   - name: source_rx_freshness_date
-    description: "Latest observed pharmacy file date for this source, falling back to ingestion date. A recent reload does not replace an available older file date."
+    description: Latest observed pharmacy file date for this source, falling back to ingestion date. A
+      recent reload does not replace an available older file date.
   - name: source_clinical_lag_days
-    description: "Days from the latest nonfuture dispensing observed in the source to the assessment date; independent of file ingestion time."
+    description: Days from the latest nonfuture dispensing observed in the source to the assessment date;
+      independent of file ingestion time.
   - name: outreach_readiness_status
-    description: "Review context for death, unconfirmed enrollment, missing or future source freshness, and lagged data. current_record_review is not confirmation of medication use or feed completeness."
+    description: Review context for death, unconfirmed enrollment, missing or future source freshness,
+      and lagged data. current_record_review is not confirmation of medication use or feed completeness.
   - name: deceased_flag
-    description: "1 when Core indicates death or a death date on or before assessment_date. Known deceased patients are excluded from worklists."
+    description: 1 when Core indicates death or a death date on or before assessment_date. Known deceased
+      patients are excluded from worklists.
   - name: currently_enrolled_flag
-    description: "1 when an eligibility interval covers assessment_date. Otherwise outreach requires enrollment confirmation."
+    description: 1 when an eligibility interval covers assessment_date. Otherwise outreach requires enrollment
+      confirmation.
   - name: patient_rx_age_days
-    description: "Days between patient pharmacy freshness and assessment_date."
+    description: Days between patient pharmacy freshness and assessment_date.
   - name: source_rx_age_days
-    description: "Days between source pharmacy freshness and assessment_date."
+    description: Days between source pharmacy freshness and assessment_date.
+  config: *drugs_schema
 - name: drugs__medication_condition
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Enterprise-only medication-to-condition evidence from versioned
-    CodeRx ATC and exact ingredient rules. Not the actual prescribing indication.
-    The table retains its columns but is empty under Open.
+  description: Claim-level medication-to-condition matches from CodeRx ATC classes. Includes qualifying,
+    possible, and separately curated refill evidence in the trailing 365 days.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -240,13 +267,10 @@ models:
   - name: condition_code
     data_tests:
     - not_null
+  config: *drugs_schema
 - name: drugs__condition_status
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Enterprise-only current assessment per source/person/condition.
-    Nullable flags preserve unknown exposure. The table is empty under Open;
-    consult terminology_status before interpreting absence of rows.
+  description: Source/patient/condition assessment of annual medication evidence and potential current
+    refill needs. Available in both CodeRx modes; uncertainty is explicit.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -254,22 +278,23 @@ models:
         - condition_status_id
   columns:
   - name: condition_status_id
-    description: "Unique source, patient and condition assessment key; shared with the gap and refill worklists."
+    description: Unique source, patient and condition assessment key; shared with the gap and refill worklists.
     data_tests:
     - not_null
   - name: active_condition_supply_flag
-    description: 1 when usable current supply exists for any treatment related to
-      the condition, including respiratory rescue medication.
+    description: 1 when usable current supply exists for any treatment related to the condition, including
+      respiratory rescue medication.
   - name: active_maintenance_supply_flag
-    description: 1 when usable current supply exists for a refill-eligible maintenance
-      treatment. Rescue-only supply does not suppress an overdue maintenance refill.
+    description: 1 when usable current supply exists for a refill-eligible maintenance treatment. Rescue-only
+      supply does not suppress an overdue maintenance refill.
   - name: latest_maintenance_medication_id
-    description: Medication ID for the usable maintenance fill whose supply end
-      determines the estimated refill due date, not necessarily the latest dispensing.
+    description: Medication ID of the known-supply fill for the selected repeated clinical product; joins
+      to medication with person and source.
   - name: latest_maintenance_drug_name
-    description: Drug name associated with latest_maintenance_medication_id.
+    description: Name of the fill used to calculate the potential refill due date.
   - name: open_drug_gap_flag
-    description: 1 = review candidate, 0 = not flagged, null = unable to assess.
+    description: 1 for no related class dispensing observed in the same 365-day condition/medication window;
+      0 for observed qualifying evidence or deceased exclusion; null for uncertain evidence.
     data_tests:
     - accepted_values:
         arguments:
@@ -278,7 +303,8 @@ models:
           - 1
           quote: false
   - name: needs_refill_flag
-    description: 1 = review candidate, 0 = not flagged, null = unable to assess.
+    description: 1 for a potential refill due within the configured window; 0 for assessed patients without
+      a refill candidate; null for uncertain evidence or a condition outside refill scope.
     data_tests:
     - accepted_values:
         arguments:
@@ -287,54 +313,77 @@ models:
           - 1
           quote: false
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
   - name: person_id
-    description: "Patient identifier within data_source; not a cross-source person match."
+    description: Patient identifier within data_source; not a cross-source person match.
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: patient_rx_freshness_date
-    description: "Latest observed patient pharmacy file date, falling back to ingestion date when no file date is available. Does not certify a complete claims feed."
+    description: Latest observed patient pharmacy file date, falling back to ingestion date when no file
+      date is available. Does not certify a complete claims feed.
   - name: source_rx_freshness_date
-    description: "Latest observed pharmacy file date for this source, falling back to ingestion date. A recent reload does not replace an available older file date."
+    description: Latest observed pharmacy file date for this source, falling back to ingestion date. A
+      recent reload does not replace an available older file date.
   - name: source_clinical_lag_days
-    description: "Days from the latest nonfuture dispensing observed in the source to the assessment date; independent of file ingestion time."
+    description: Days from the latest nonfuture dispensing observed in the source to the assessment date;
+      independent of file ingestion time.
   - name: outreach_readiness_status
-    description: "Review context for death, unconfirmed enrollment, missing or future source freshness, and lagged data. current_record_review is not confirmation of medication use or feed completeness."
+    description: Review context for death, unconfirmed enrollment, missing or future source freshness,
+      and lagged data. current_record_review is not confirmation of medication use or feed completeness.
   - name: condition_code
-    description: "Stable analyst-facing code from the versioned condition rule seed."
+    description: Stable analyst-facing code from the versioned condition rule seed.
   - name: condition_name
-    description: "Tuva condition grouper label used to identify the cohort."
+    description: Tuva condition grouper label used to identify the cohort.
   - name: last_condition_date
-    description: "Most recent qualifying unresolved condition date in the configured lookback."
+    description: Most recent qualifying unresolved condition date in the configured lookback.
   - name: condition_freshness_date
-    description: "Latest condition evidence file date, falling back to condition ingestion date."
+    description: Latest condition evidence file date, falling back to condition ingestion date.
   - name: unknown_duration_flag
-    description: "1 when recent condition-related medication evidence has unusable duration and prevents a confident absence-of-supply assessment."
+    description: Recent refill-related dispensing with unusable supply. Does not prevent a known dispensing
+      from counting in the annual gap screen.
   - name: recent_unmapped_drug_flag
-    description: "1 when recent patient pharmacy evidence cannot be mapped to CodeRx; absence-of-treatment conclusions remain uncertain."
+    description: 1 when recent patient pharmacy evidence cannot be mapped to CodeRx; absence-of-treatment
+      conclusions remain uncertain.
   - name: maintenance_fill_dates
-    description: "Distinct qualifying maintenance dispensing dates within the refill history window. Refill authorizations do not add dispensing dates."
+    description: Distinct usable dispensing dates for the selected clinical product in the trailing 365
+      days; at least two by default.
   - name: maintenance_supply_end_date
-    description: "Latest inclusive usable maintenance supply end that determines the condition-level refill due date."
+    description: Latest inclusive usable maintenance supply end that determines the condition-level refill
+      due date.
   - name: estimated_refill_due_date
-    description: "Day after maintenance_supply_end_date. The linked maintenance medication identifies the fill supporting this date."
+    description: Day after maintenance_supply_end_date. The linked maintenance medication identifies the
+      fill supporting this date.
   - name: days_overdue
-    description: "Assessment date minus estimated refill due date; negative is due soon, zero is due today, positive is overdue."
+    description: Assessment date minus estimated refill due date; negative is due soon, zero is due today,
+      positive is overdue.
   - name: gap_status
-    description: "Explains known active supply, a potential open gap, inability to assess, or exclusion for known death."
+    description: Explains qualifying dispensing, potential annual absence, deceased exclusion or uncertainty
+      from possible classes, unknown mapping/date, or missing feed.
   - name: gap_history
-    description: "Distinguishes no prior qualifying claim from prior treatment without current supply for flagged gaps."
+    description: Whether qualifying, possible, or no related class dispensing was observed within 365
+      days; not a treatment-initiation history.
   - name: treatment_evidence_file_date
-    description: "File date of the maintenance fill supporting the refill due date."
+    description: File date of the maintenance fill supporting the refill due date.
   - name: treatment_evidence_ingest_datetime
-    description: "Ingestion timestamp of the maintenance fill supporting the refill due date."
+    description: Ingestion timestamp of the maintenance fill supporting the refill due date.
+  - name: qualifying_condition_fill_count
+    description: Qualifying class dispensing rows within 365 days, including missing days supply.
+  - name: possible_condition_fill_count
+    description: Dispensing rows matched only to a mixed/possible treatment class within 365 days.
+  - name: annual_unknown_medication_flag
+    description: 1 when a medication has an unknown dispensing date or cannot be fully classified in the
+      annual window.
+  - name: refill_condition_eligible_flag
+    description: 1 for the seven chronic refill cohorts; 0 for the other annual gap cohorts.
+  - name: refill_class_confidence
+    description: qualifying or possible classification for the selected repeated-product refill evidence.
+  - name: gap_assessment_basis
+    description: 365_day_class_dispensing.
+  config: *drugs_schema
 - name: drugs__open_drug_gap
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: 'Enterprise-only potential current gaps: recent condition evidence
-    and no known active qualifying supply. Unknown exposure is excluded. Empty
-    under Open means the workflow is unavailable, not that the population has no gaps.'
+  description: 'Candidate gaps: condition evidence and no qualifying or possible related class dispensing
+    in the same 365 days. Unknown class/date or absent pharmacy feed prevents a definitive absence flag.'
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -342,38 +391,58 @@ models:
         - condition_status_id
   columns:
   - name: condition_status_id
-    description: "Links to condition_status for the complete assessment and to the corresponding condition and medication evidence."
+    description: Links to condition_status for the complete assessment and to the corresponding condition
+      and medication evidence.
     data_tests:
     - not_null
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
   - name: person_id
-    description: "Patient identifier within data_source; not a cross-source person match."
+    description: Patient identifier within data_source; not a cross-source person match.
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: patient_rx_freshness_date
-    description: "Latest observed patient pharmacy file date, falling back to ingestion date when no file date is available. Does not certify a complete claims feed."
+    description: Latest observed patient pharmacy file date, falling back to ingestion date when no file
+      date is available. Does not certify a complete claims feed.
   - name: source_rx_freshness_date
-    description: "Latest observed pharmacy file date for this source, falling back to ingestion date. A recent reload does not replace an available older file date."
+    description: Latest observed pharmacy file date for this source, falling back to ingestion date. A
+      recent reload does not replace an available older file date.
   - name: source_clinical_lag_days
-    description: "Days from the latest nonfuture dispensing observed in the source to the assessment date; independent of file ingestion time."
+    description: Days from the latest nonfuture dispensing observed in the source to the assessment date;
+      independent of file ingestion time.
   - name: outreach_readiness_status
-    description: "Review context for death, unconfirmed enrollment, missing or future source freshness, and lagged data. current_record_review is not confirmation of medication use or feed completeness."
+    description: Review context for death, unconfirmed enrollment, missing or future source freshness,
+      and lagged data. current_record_review is not confirmation of medication use or feed completeness.
   - name: condition_name
-    description: "Condition with a potential absence of any related current medication supply."
+    description: Condition with a potential absence of any related current medication supply.
   - name: open_drug_gap_flag
-    description: "Always 1 in this worklist. Unknown assessments remain in condition_status and are excluded here."
+    description: 1 for no related class dispensing observed in the same 365-day condition/medication window;
+      0 for observed qualifying evidence or deceased exclusion; null for uncertain evidence.
   - name: condition_freshness_date
-    description: "Condition evidence file date, falling back to ingestion date; review alongside pharmacy freshness."
+    description: Condition evidence file date, falling back to ingestion date; review alongside pharmacy
+      freshness.
   - name: gap_history
-    description: "Whether the patient has no prior qualifying claim or prior treatment with no current estimated supply."
+    description: Whether qualifying, possible, or no related class dispensing was observed within 365
+      days; not a treatment-initiation history.
+  - name: qualifying_condition_fill_count
+    description: Qualifying class dispensing rows within 365 days, including missing days supply.
+  - name: possible_condition_fill_count
+    description: Dispensing rows matched only to a mixed/possible treatment class within 365 days.
+  - name: annual_unknown_medication_flag
+    description: 1 when a medication has an unknown dispensing date or cannot be fully classified in the
+      annual window.
+  - name: refill_condition_eligible_flag
+    description: 1 for the seven chronic refill cohorts; 0 for the other annual gap cohorts.
+  - name: refill_class_confidence
+    description: qualifying or possible classification for the selected repeated-product refill evidence.
+  - name: gap_assessment_basis
+    description: 365_day_class_dispensing.
+  config: *drugs_schema
 - name: drugs__needs_refill
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Enterprise-only condition-level refill review for repeated
-    maintenance fills due soon or recently overdue, excluding uncertain exposure.
-    Empty under Open means the workflow requires Enterprise.
+  description: Potential refill worklist for seven chronic conditions using repeated clinical-product
+    dispensing and known days supply. Available in both modes; scheduled use and ongoing treatment need
+    review.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -381,54 +450,78 @@ models:
         - condition_status_id
   columns:
   - name: condition_status_id
-    description: "Links to condition_status for the full assessment. This is a condition-level, not medication-regimen-component, worklist."
+    description: Links to condition_status for the full assessment. This is a condition-level, not medication-regimen-component,
+      worklist.
     data_tests:
     - not_null
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
   - name: person_id
-    description: "Patient identifier within data_source; not a cross-source person match."
+    description: Patient identifier within data_source; not a cross-source person match.
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: patient_rx_freshness_date
-    description: "Latest observed patient pharmacy file date, falling back to ingestion date when no file date is available. Does not certify a complete claims feed."
+    description: Latest observed patient pharmacy file date, falling back to ingestion date when no file
+      date is available. Does not certify a complete claims feed.
   - name: source_rx_freshness_date
-    description: "Latest observed pharmacy file date for this source, falling back to ingestion date. A recent reload does not replace an available older file date."
+    description: Latest observed pharmacy file date for this source, falling back to ingestion date. A
+      recent reload does not replace an available older file date.
   - name: source_clinical_lag_days
-    description: "Days from the latest nonfuture dispensing observed in the source to the assessment date; independent of file ingestion time."
+    description: Days from the latest nonfuture dispensing observed in the source to the assessment date;
+      independent of file ingestion time.
   - name: outreach_readiness_status
-    description: "Review context for death, unconfirmed enrollment, missing or future source freshness, and lagged data. current_record_review is not confirmation of medication use or feed completeness."
+    description: Review context for death, unconfirmed enrollment, missing or future source freshness,
+      and lagged data. current_record_review is not confirmation of medication use or feed completeness.
   - name: condition_name
-    description: "Condition with repeated maintenance fill evidence and a potential refill due within the configured window."
+    description: Condition with repeated maintenance fill evidence and a potential refill due within the
+      configured window.
   - name: needs_refill_flag
-    description: "Always 1 in this worklist. Unknown assessments remain in condition_status and are excluded here."
+    description: 1 for a potential refill due within the configured window; 0 for assessed patients without
+      a refill candidate; null for uncertain evidence or a condition outside refill scope.
   - name: refill_status
-    description: "due_soon for a future due date, due_today for assessment_date, or overdue for a recent past due date."
+    description: Potential due_soon, due_today or overdue, or the reason no refill candidate was asserted.
   - name: estimated_refill_due_date
-    description: "Day after the latest usable maintenance supply ends."
+    description: Day after the latest usable maintenance supply ends.
   - name: days_overdue
-    description: "Assessment date minus the estimated due date. Negative values are days until the refill is due."
+    description: Assessment date minus the estimated due date. Negative values are days until the refill
+      is due.
   - name: maintenance_fill_dates
-    description: "Number of distinct maintenance dispensing dates supporting an established treatment pattern; default minimum two."
+    description: Distinct usable dispensing dates for the selected clinical product in the trailing 365
+      days; at least two by default.
   - name: latest_maintenance_medication_id
-    description: "Usable maintenance fill whose supply end drives the due date. Join to medication by this ID and data_source."
+    description: Medication ID of the known-supply fill for the selected repeated clinical product; joins
+      to medication with person and source.
   - name: latest_maintenance_drug_name
-    description: "Name of the medication associated with the refill due date, not necessarily the most recently dispensed drug."
+    description: Name of the fill used to calculate the potential refill due date.
   - name: active_maintenance_supply_flag
-    description: "Current usable maintenance supply. Respiratory rescue-only supply does not suppress an overdue controller refill."
+    description: Current usable maintenance supply. Respiratory rescue-only supply does not suppress an
+      overdue controller refill.
   - name: treatment_evidence_file_date
-    description: "Source-file date of the maintenance fill supporting the due date."
+    description: Source-file date of the maintenance fill supporting the due date.
   - name: treatment_evidence_ingest_datetime
-    description: "Ingestion timestamp of the maintenance fill supporting the due date."
+    description: Ingestion timestamp of the maintenance fill supporting the due date.
   - name: recommendation_basis
-    description: "Explicit potential-refill label requiring confirmation of the ongoing prescription and scheduled use."
+    description: Explicit potential-refill label requiring confirmation of the ongoing prescription and
+      scheduled use.
+  - name: qualifying_condition_fill_count
+    description: Qualifying class dispensing rows within 365 days, including missing days supply.
+  - name: possible_condition_fill_count
+    description: Dispensing rows matched only to a mixed/possible treatment class within 365 days.
+  - name: annual_unknown_medication_flag
+    description: 1 when a medication has an unknown dispensing date or cannot be fully classified in the
+      annual window.
+  - name: refill_condition_eligible_flag
+    description: 1 for the seven chronic refill cohorts; 0 for the other annual gap cohorts.
+  - name: refill_class_confidence
+    description: qualifying or possible classification for the selected repeated-product refill evidence.
+  - name: gap_assessment_basis
+    description: 365_day_class_dispensing.
+  config: *drugs_schema
 - name: drugs__generic_alternative
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Active catalog generic NDCs grouped by exact clinical drug. Optional
-    Enterprise screening restricts known categories to ANDA and respects known
-    marketing dates; a missing category retains baseline status checks.
+  description: Active catalog generic NDCs grouped by exact clinical drug. Optional Enterprise screening
+    restricts known categories to ANDA and respects known marketing dates; a missing category retains
+    baseline status checks.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -436,28 +529,29 @@ models:
         - generic_ndc_code
   columns:
   - name: generic_ndc_code
-    description: "Active, prescribable generic package NDC. Multiple NDC alternatives may share a clinical product."
+    description: Active, prescribable generic package NDC. Multiple NDC alternatives may share a clinical
+      product.
     data_tests:
     - not_null
   - name: generic_screening_basis
-    description: active_product_flags for baseline status checks, or enterprise_marketing_metadata
-      when paid regulatory category and marketing dates are also applied.
+    description: active_product_flags for baseline status checks, or enterprise_marketing_metadata when
+      paid regulatory category and marketing dates are also applied.
   - name: enterprise_marketing_enabled_flag
     description: 1 when Enterprise marketing metadata is available and enabled.
   - name: marketing_screening_applied_flag
     description: 1 when this generic alternative was screened using Enterprise marketing metadata.
   - name: clinical_drug_id
-    description: "Exact CodeRx clinical product used to match brand and generic ingredient, strength and dosage form."
+    description: Exact CodeRx clinical product used to match brand and generic ingredient, strength and
+      dosage form.
   - name: clinical_drug_name
-    description: "Name of the matching clinical product, not a certification of therapeutic equivalence."
+    description: Name of the matching clinical product, not a certification of therapeutic equivalence.
   - name: alternative_basis
-    description: "Explains whether the catalog match used baseline active nonbrand status or known ANDA marketing category."
+    description: Explains whether the catalog match used baseline active nonbrand status or known ANDA
+      marketing category.
+  config: *drugs_schema
 - name: drugs__brand_generic_opportunity
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: One current brand per source/person/clinical product, with availability
-    separate from priceability and additive prospective payer-paid savings.
+  description: One current brand per source/person/clinical product, with availability separate from priceability
+    and additive prospective payer-paid savings.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -465,226 +559,220 @@ models:
         - opportunity_id
   columns:
   - name: opportunity_id
-    description: "Unique current source, patient and branded clinical-product opportunity."
+    description: Unique current source, patient and branded clinical-product opportunity.
     data_tests:
     - not_null
   - name: brand_screening_basis
-    description: brand_flag for the baseline, or enterprise_nda_category when paid
-      regulatory category screening is applied to the current brand.
+    description: brand_flag for the baseline, or enterprise_nda_category when paid regulatory category
+      screening is applied to the current brand.
   - name: generic_screening_basis
-    description: Screening used for the available catalog alternatives; mixed_screening_basis
-      identifies alternatives with different screening bases.
+    description: Screening used for the available catalog alternatives; mixed_screening_basis identifies
+      alternatives with different screening bases.
   - name: marketing_screening_applied_flag
-    description: 1 only when the brand and all catalog alternatives used paid
-      Enterprise marketing screening. This is not a therapeutic-equivalence determination.
+    description: 1 only when the brand and all catalog alternatives used paid Enterprise marketing screening.
+      This is not a therapeutic-equivalence determination.
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
   - name: person_id
-    description: "Patient identifier within data_source; not a cross-source person match."
+    description: Patient identifier within data_source; not a cross-source person match.
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: patient_rx_freshness_date
-    description: "Latest observed patient pharmacy file date, falling back to ingestion date when no file date is available. Does not certify a complete claims feed."
+    description: Latest observed patient pharmacy file date, falling back to ingestion date when no file
+      date is available. Does not certify a complete claims feed.
   - name: source_rx_freshness_date
-    description: "Latest observed pharmacy file date for this source, falling back to ingestion date. A recent reload does not replace an available older file date."
+    description: Latest observed pharmacy file date for this source, falling back to ingestion date. A
+      recent reload does not replace an available older file date.
   - name: source_clinical_lag_days
-    description: "Days from the latest nonfuture dispensing observed in the source to the assessment date; independent of file ingestion time."
+    description: Days from the latest nonfuture dispensing observed in the source to the assessment date;
+      independent of file ingestion time.
   - name: outreach_readiness_status
-    description: "Review context for death, unconfirmed enrollment, missing or future source freshness, and lagged data. current_record_review is not confirmation of medication use or feed completeness."
+    description: Review context for death, unconfirmed enrollment, missing or future source freshness,
+      and lagged data. current_record_review is not confirmation of medication use or feed completeness.
   - name: drug_name
-    description: "Name of the current branded product selected from usable active supply."
+    description: Name of the current branded product selected from usable active supply.
   - name: clinical_drug_id
-    description: "Same ingredient, strength and dosage-form product used to find generic alternatives and comparable claims."
+    description: Same ingredient, strength and dosage-form product used to find generic alternatives and
+      comparable claims.
   - name: brand_ndc_code
-    description: "Package NDC on the selected current branded fill."
+    description: Package NDC on the selected current branded fill.
   - name: generic_alternative_name
-    description: "Name of the matching generic clinical product. Candidate NDCs are listed separately in generic_alternative."
+    description: Name of the matching generic clinical product. Candidate NDCs are listed separately in
+      generic_alternative.
   - name: generic_available_flag
-    description: "1 when at least one eligible catalog generic exists; independent of observed generic claims or prices."
+    description: 1 when at least one eligible catalog generic exists; independent of observed generic
+      claims or prices.
   - name: generic_ndc_count
-    description: "Count of catalog NDC alternatives. Do not multiply parent opportunity savings by this count."
+    description: Count of catalog NDC alternatives. Do not multiply parent opportunity savings by this
+      count.
   - name: paid_amount
-    description: "Payer-paid amount on the selected brand fill; no allowed or patient-paid financials are used."
+    description: Payer-paid amount on the selected brand fill; no allowed or patient-paid financials are
+      used.
   - name: pricing_status
-    description: "Separates no_catalog_generic, unpriced_brand, insufficient_paid_benchmark, and priced_for_review."
+    description: Separates no_catalog_generic, unpriced_brand, insufficient_paid_benchmark, and priced_for_review.
   - name: benchmark_claim_count
-    description: "Comparable positive payer-paid generic claims in the benchmark window; default minimum three."
+    description: Comparable positive payer-paid generic claims in the benchmark window; default minimum
+      three.
   - name: benchmark_person_count
-    description: "Distinct source-scoped generic patients in the benchmark; default minimum two."
+    description: Distinct source-scoped generic patients in the benchmark; default minimum two.
   - name: generic_paid_per_unit
-    description: "Median generic payer-paid price per unit among comparable source, payer, plan, clinical-product and utilization claims."
+    description: Median generic payer-paid price per unit among comparable source, payer, plan, clinical-product
+      and utilization claims.
   - name: brand_paid_per_30_days
-    description: "Brand payer-paid amount normalized to 30 days of the current fill."
+    description: Brand payer-paid amount normalized to 30 days of the current fill.
   - name: generic_paid_per_30_days
-    description: "Estimated generic payer-paid amount for 30 days at current brand utilization."
+    description: Estimated generic payer-paid amount for 30 days at current brand utilization.
   - name: estimated_savings_per_30_days
-    description: "Nonnegative difference between brand and estimated generic payer-paid cost per 30 days; null when unpriced."
+    description: Nonnegative difference between brand and estimated generic payer-paid cost per 30 days;
+      null when unpriced.
   - name: estimated_annual_savings
-    description: "Prospective nonnegative daily savings multiplied by 365. Assumes continued treatment and current prices; null when unpriced."
+    description: Prospective nonnegative daily savings multiplied by 365. Assumes continued treatment
+      and current prices; null when unpriced.
   - name: brand_file_date
-    description: "Source-file date of the current branded fill used for price and supply evidence."
+    description: Source-file date of the current branded fill used for price and supply evidence.
   - name: benchmark_file_date
-    description: "Latest source-file date among comparable generic benchmark claims."
+    description: Latest source-file date among comparable generic benchmark claims.
   - name: savings_basis
-    description: "States the full-year continuation and price assumptions and need for equivalence and coverage review."
+    description: States the full-year continuation and price assumptions and need for equivalence and
+      coverage review.
+  config: *drugs_schema
 - name: drugs__stg_packages
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
         combination_of_columns:
         - ndc_code
-  description: ''
+  config: *drugs_schema
+  description: CodeRx package identity and product flags; Enterprise additionally provides marketing metadata.
+    Identical projected rows collapse. Conflicting rows for one NDC remain visible so the staging uniqueness
+    test fails during dbt build before dependent models run; the package never chooses an arbitrary mapping.
 - name: drugs__stg_drugs
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
         combination_of_columns:
         - drug_id
-  description: ''
+  config: *drugs_schema
+  description: CodeRx product identity, plus complete ingredient and dose-form fields with Enterprise.
 - name: drugs__drug_condition
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
         combination_of_columns:
         - drug_id
         - condition_code
-  description: ''
+  config: *drugs_schema
+  description: One product/condition row summarizing all direct or clinical-product ATC matches, preserving
+    qualifying versus possible evidence.
 - name: drugs__fill
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
         combination_of_columns:
         - data_source
         - medication_id
-  description: ''
-- name: drugs__stg_ingredient
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Atomic drug/ingredient relationships.
-  data_tests:
-  - dbt_utils.unique_combination_of_columns:
-      arguments:
-        combination_of_columns:
-        - drug_id
-        - ingredient_id
-- name: drugs__ingredient_fill
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Dispensed supply expanded to each mapped ingredient.
-  data_tests:
-  - dbt_utils.unique_combination_of_columns:
-      arguments:
-        combination_of_columns:
-        - data_source
-        - medication_id
-        - drug_code
+  config: *drugs_schema
+  description: Usable dispensing intervals, with optional early-refill stockpiling confined to the same
+    clinical product.
 - name: drugs__episode_mapping_quality
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Enterprise-only excluded exposure and CodeRx ingredient mapping
-    counts. The table retains its columns but is empty under Open.
+  description: Enterprise-only counts of usable dispensing rows included in episodes or missing complete
+    ingredient/dose-form mapping. Empty with Open.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
         combination_of_columns:
         - data_source
+  config: *drugs_schema
 - name: drugs__condition_summary
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Enterprise-only source-scoped condition counts that reconcile to
-    patient drilldowns. Empty under Open; capability status distinguishes an
-    unavailable workflow from a population with no review candidates.
+  description: Source-scoped counts for 68 annual gap cohorts and seven refill cohorts, with refill denominator
+    and percentage. Reconciles to patient worklists.
   columns:
   - name: refill_denominator_patients
-    description: Living patients with qualifying condition evidence in a source with
-      an observed pharmacy feed. Includes patients without prior fills and those
-      with uncertain exposure; differs from assessed_patients.
+    description: Living patients in one of the seven refill conditions, in a source with an observed pharmacy
+      feed. Includes no-fill and uncertain patients; zero outside refill scope.
   - name: percent_needing_refill
-    description: 100 times patients_needing_refill divided by refill_denominator_patients,
-      rounded to two decimals; null for a zero denominator. Sum counts before
-      recalculating this percentage across sources.
+    description: 100 times patients_needing_refill divided by refill_denominator_patients, rounded to
+      two decimals; null for a zero denominator. Sum counts before recalculating this percentage across
+      sources.
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: condition_code
-    description: "Stable configured condition code used to join summary counts to patient worklists."
+    description: Stable configured condition code used to join summary counts to patient worklists.
   - name: condition_name
-    description: "Tuva condition grouper label for the summary row."
+    description: Tuva condition grouper label for the summary row.
   - name: assessed_patients
-    description: "All condition_status rows for this source and condition, including excluded and unassessable patients. Not the refill denominator."
+    description: All condition_status rows for this source and condition, including excluded and unassessable
+      patients. Not the refill denominator.
   - name: patients_with_open_gaps
-    description: "Number of patients with open_drug_gap_flag = 1; reconciles to open_drug_gap."
+    description: Number of patients with open_drug_gap_flag = 1; reconciles to open_drug_gap.
   - name: patients_needing_refill
-    description: "Number of patients with needs_refill_flag = 1; reconciles to needs_refill."
+    description: Number of patients with needs_refill_flag = 1; reconciles to needs_refill.
   - name: gap_unassessable_patients
-    description: "Patients whose gap flag is null because medication exposure or the pharmacy feed cannot be assessed."
+    description: Patients with null annual gap flags due to classification/date uncertainty or missing
+      pharmacy feed.
   - name: refill_unassessable_patients
-    description: "Patients whose refill flag is null because exposure or the pharmacy feed cannot be assessed. They are not asserted to need a refill."
+    description: Patients within refill scope whose refill flag is unknown.
   - name: current_record_gap_patients
-    description: "Gap candidates whose outreach_readiness_status is current_record_review; still require clinical review."
+    description: Gap candidates whose outreach_readiness_status is current_record_review; still require
+      clinical review.
   - name: current_record_refill_patients
-    description: "Refill candidates whose outreach_readiness_status is current_record_review; still require clinical review."
+    description: Refill candidates whose outreach_readiness_status is current_record_review; still require
+      clinical review.
+  - name: refill_condition_eligible_flag
+    description: 1 for seven refill cohorts; use this field to filter denominator reports.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
         combination_of_columns:
         - data_source
         - condition_code
+  config: *drugs_schema
 - name: drugs__brand_generic_summary
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Switchable patients and priced/all-patient annual savings by brand
-    and generic clinical product.
+  description: Switchable patients and priced/all-patient annual savings by brand and generic clinical
+    product.
   columns:
   - name: brand_screening_basis
     description: Screening basis shared by current brand opportunities, or mixed_screening_basis.
   - name: generic_screening_basis
     description: Screening basis shared by generic alternatives, or mixed_screening_basis.
   - name: marketing_screening_applied_flag
-    description: 1 only when every underlying opportunity used Enterprise marketing
-      screening for both the brand and all catalog alternatives.
+    description: 1 only when every underlying opportunity used Enterprise marketing screening for both
+      the brand and all catalog alternatives.
   - name: data_source
-    description: "Source component of patient and claim identity. Joins and counts remain source-scoped."
+    description: Source component of patient and claim identity. Joins and counts remain source-scoped.
   - name: assessment_date
-    description: "Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when the mart is built. This is not a historical warehouse snapshot."
+    description: Clinical assessment date from drugs_as_of_date, defaulting to the warehouse date when
+      the mart is built. This is not a historical warehouse snapshot.
   - name: brand_drug
-    description: "Current branded drug name for the summarized clinical-product opportunities."
+    description: Current branded drug name for the summarized clinical-product opportunities.
   - name: clinical_drug_id
-    description: "CodeRx clinical product shared by the brand and generic alternatives."
+    description: CodeRx clinical product shared by the brand and generic alternatives.
   - name: generic_alternative
-    description: "Generic clinical-product name; multiple package NDCs do not multiply patient counts or savings."
+    description: Generic clinical-product name; multiple package NDCs do not multiply patient counts or
+      savings.
   - name: patients_who_could_switch
-    description: "Current source-scoped brand users with an eligible catalog generic, subject to clinical and coverage review."
+    description: Current source-scoped brand users with an eligible catalog generic, subject to clinical
+      and coverage review.
   - name: patients_with_savings_estimate
-    description: "Candidates whose pricing_status is priced_for_review, including supported estimates of zero savings."
+    description: Candidates whose pricing_status is priced_for_review, including supported estimates of
+      zero savings.
   - name: patients_without_savings_estimate
-    description: "Candidates without a supported savings estimate. Missing savings is not zero savings."
+    description: Candidates without a supported savings estimate. Missing savings is not zero savings.
   - name: patients_with_positive_estimated_savings
-    description: "Priced candidates with estimated annual savings greater than zero."
+    description: Priced candidates with estimated annual savings greater than zero.
   - name: annual_savings_for_priced_patients
-    description: "Sum of supported patient annual savings. An explicitly partial subtotal when any candidates are unpriced."
+    description: Sum of supported patient annual savings. An explicitly partial subtotal when any candidates
+      are unpriced.
   - name: annual_savings_if_all_switched
-    description: "Full-cohort sum only when every candidate is priced; null when at least one candidate lacks an estimate."
+    description: Full-cohort sum only when every candidate is priced; null when at least one candidate
+      lacks an estimate.
   - name: savings_coverage_status
-    description: "all_patients_priced or incomplete_pricing; distinguishes a full-cohort estimate from a partial subtotal."
+    description: all_patients_priced or incomplete_pricing; distinguishes a full-cohort estimate from
+      a partial subtotal.
   data_tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
@@ -692,15 +780,133 @@ models:
         - data_source
         - brand_drug
         - clinical_drug_id
+  config: *drugs_schema
+- name: drugs__terminology_status
+  description: One row identifying the CodeRx tier and which analytics are enabled for this build.
+  columns:
+  - name: assessment_date
+    description: Clinical assessment date, not a historical warehouse snapshot.
+    data_tests:
+    - not_null
+  - name: terminology_tier
+    description: CodeRx tier selected by the single use_coderx_enterprise toggle. Required paid inputs
+      are validated without fallback.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - open
+          - enterprise
+  - name: capability_status
+    description: Open enables gaps, refills and brand/generic; Enterprise adds episodes and broader terminology.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - open_gaps_refills_and_brand_generic
+          - enterprise_episodes_and_broader_terminology
+  - name: clinical_analytics_enabled_flag
+    description: 1 in both modes because class-based gaps and refills are available with Open.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+  - name: enterprise_drug_details_enabled_flag
+    description: 1 when the required CodeRx Enterprise drug detail fields are selected.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+  - name: enterprise_marketing_enabled_flag
+    description: 1 when the required CodeRx Enterprise marketing fields are selected; individual values
+      may remain unknown.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+  - name: drug_gaps_enabled_flag
+    description: 1 in both CodeRx modes.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+  - name: needs_refill_enabled_flag
+    description: 1 in both CodeRx modes.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+  - name: brand_generic_enabled_flag
+    description: 1 in both CodeRx modes.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+  - name: drug_episodes_enabled_flag
+    description: 1 with Enterprise, 0 with Open.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - 0
+          - 1
+          quote: false
+  config: *drugs_schema
+- name: drugs__condition_medication_summary
+  config: *drugs_schema
+  description: Annual class evidence and repeated-product supply evidence per source, patient and condition.
+- name: drugs__current_brand
+  config: *drugs_schema
+  description: Latest current branded clinical product per patient/source, excluding observed switches
+    to generic or uncertain replacement fills.
+- name: drugs__episode_fill
+  config: *drugs_schema
+  description: Known supply at the complete ingredient-combination and dose-form grain, with episode boundaries
+    and nonoverlapping covered-day contributions.
+- name: drugs__generic_benchmark
+  config: *drugs_schema
+  description: Median observed generic payer-paid cost per unit among comparable source, payer, plan,
+    clinical product and daily utilization claims.
+- name: drugs__medical_claim_lineage
+  config: *drugs_schema
+  description: Source/person/claim provenance for condition freshness.
+- name: drugs__stg_classes
+  config: *drugs_schema
+  description: All CodeRx ATC memberships, without choosing a single primary class.
 seeds:
 - name: drugs__condition_rule
-  config:
-    schema: |
-      {%- if var('tuva_schema_prefix', none) is not none and (var('tuva_schema_prefix') | trim) != '' -%}{{ var('tuva_schema_prefix') | trim }}_drugs{% else %}drugs{%- endif -%}
-  description: Versioned analyst-facing condition/ATC rules. Not a clinical prescribing
-    protocol.
+  description: Reviewed condition-to-ATC policy for 68 annual evidence screens and seven potential-refill
+    cohorts. Drug identities remain in CodeRx.
   columns:
   - name: rule_id
     data_tests:
     - not_null
     - unique
+  config: *drugs_schema

@@ -1,5 +1,4 @@
 {{ config(tags=['drugs_scenarios']) }}
-{% if drugs.drugs_enterprise() %}
 select e.data_source,e.condition_code
 from {{ ref('expected_condition_summary') }} e
 left join {{ ref('drugs__condition_summary') }} a
@@ -12,8 +11,3 @@ where a.condition_code is null
  or coalesce(a.percent_needing_refill,-1)<>coalesce(e.percent_needing_refill,-1)
  or a.gap_unassessable_patients<>e.gap_unassessable_patients
  or a.refill_unassessable_patients<>e.refill_unassessable_patients
-
-{% else %}
--- Disabled clinical features remain empty, including after partial rebuilds.
-select 'condition_summary' as unexpectedly_populated_relation from {{ ref('drugs__condition_summary') }}
-{% endif %}

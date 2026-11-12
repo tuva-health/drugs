@@ -14,21 +14,21 @@ with packages as (
                   and (end_marketing_date is null or {{ drugs_vendor_date('end_marketing_date') }} is not null)
              then 1 else 0 end as marketing_dates_valid_flag,
         {{ drugs_vendor_date('start_marketing_date') }} as start_marketing_date,
-        {{ drugs_vendor_date('end_marketing_date') }} as end_marketing_date,
+        {{ drugs_vendor_date('end_marketing_date') }} as end_marketing_date
         {% else %}
         cast(null as {{ dbt.type_string() }}) as marketing_category,
         1 as marketing_dates_valid_flag,
         cast(null as date) as start_marketing_date,
-        cast(null as date) as end_marketing_date,
+        cast(null as date) as end_marketing_date
         {% endif %}
-        row_number() over (partition by ndc11 order by drug_id) as package_row_number
     from {{ drugs_coderx('packages') }}
 )
-select
+-- Collapse identical projected rows only. Conflicting NDC mappings remain
+-- visible to the staging uniqueness test instead of choosing a drug or flag.
+select distinct
     ndc_code, drug_id, brand_flag, active_flag, prescribable_flag,
     marketing_category, marketing_dates_valid_flag, start_marketing_date, end_marketing_date,
     enterprise_marketing_enabled_flag,
     cast(case when enterprise_marketing_enabled_flag = 1 and marketing_category is not null
               then 1 else 0 end as {{ dbt.type_int() }}) as marketing_screening_applied_flag
 from packages
-where package_row_number = 1

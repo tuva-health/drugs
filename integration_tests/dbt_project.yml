@@ -22,7 +22,7 @@ vars:
   use_coderx_enterprise: false
   synthetic_data_size: small
   tuva_core_data_asset_version: '1.0.0'
-  tuva_schema_prefix: drugs_validation_20261110_open
+  tuva_schema_prefix: drugs_test
   tuva_last_run: '2026-11-10 00:00:00'
   drugs_as_of_date: '2026-11-10'
   drugs_episode_gap_days: 30
@@ -35,12 +35,12 @@ dispatch:
 models:
   drugs_integration_tests:
     +materialized: table
-    +schema: "{{ var('tuva_schema_prefix', 'drugs_validation_20261110_open') }}_input_layer"
+    +schema: "{{ var('tuva_schema_prefix', 'drugs_test') }}_input_layer"
     +tags: [drugs_scenarios]
 
 seeds:
   drugs_integration_tests:
-    +schema: "{{ var('tuva_schema_prefix', 'drugs_validation_20261110_open') }}_scenario_inputs"
+    +schema: "{{ var('tuva_schema_prefix', 'drugs_test') }}_scenario_inputs"
     +tags: [drugs_scenarios]
 
 flags:

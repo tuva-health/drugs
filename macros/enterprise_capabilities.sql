@@ -3,10 +3,10 @@
       'packages': ['ndc11', 'drug_id', 'is_brand', 'active', 'prescribable',
                    'marketing_category', 'start_marketing_date', 'end_marketing_date'],
       'drugs': ['drug_id', 'drug_name', 'clinical_drug_id', 'clinical_drug_name',
-                'is_brand', 'active', 'prescribable', 'ingredient_id', 'ingredient_name', 'dose_form_name'],
+                'is_brand', 'active', 'prescribable', 'ingredient_id', 'ingredient_name',
+                'ingredient_type', 'dose_form_id', 'dose_form_name'],
       'classes': ['drug_id', 'atc_1_code', 'atc_1_name', 'atc_2_code', 'atc_2_name',
-                  'atc_3_code', 'atc_3_name', 'atc_4_code', 'atc_4_name'],
-      'ingredients': ['drug_id', 'ingredient_component_id', 'ingredient_component_name', 'ingredient_component_type']
+                  'atc_3_code', 'atc_3_name', 'atc_4_code', 'atc_4_name']
   }) }}
 {% endmacro %}
 
@@ -18,7 +18,7 @@
   {% if existing is none %}
     {{ exceptions.raise_compiler_error(
         'Drugs CodeRx Enterprise requires relation ' ~ relation ~ '. Load the licensed CodeRx ' ~ table ~
-        ' table and grant the dbt role access, or set use_coderx_enterprise: false for Brand vs. Generic only. No substitute terminology is used.'
+        ' table and grant the dbt role access, or set use_coderx_enterprise: false for Open drug gaps, refills, and Brand vs. Generic. Drug Episodes require Enterprise.'
     ) }}
   {% endif %}
   {% set names = [] %}
@@ -52,9 +52,5 @@
 {% endmacro %}
 
 {% macro drugs_enterprise_marketing_enabled() %}
-  {{ return(drugs_enterprise()) }}
-{% endmacro %}
-
-{% macro drugs_enterprise_ingredients_enabled() %}
   {{ return(drugs_enterprise()) }}
 {% endmacro %}

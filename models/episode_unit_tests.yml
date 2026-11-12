@@ -1,0 +1,753 @@
+# Fabricated identities exercise complete-combination and dose-form episodes.
+version: 2
+unit_tests:
+- name: episode_combination_and_form_separate_strength_and_brand_continue
+  model: drugs__episode_fill
+  overrides:
+    vars:
+      use_coderx_enterprise: true
+      drugs_as_of_date: '2026-11-10'
+      drugs_episode_gap_days: 30
+  given:
+  - input: ref('drugs__fill')
+    rows:
+    - medication_id: low
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+    - medication_id: high
+      person_id: p
+      data_source: a
+      therapy_id: clinical:high_strength
+      therapy_name: high_strength
+      therapy_grain: clinical_drug
+      drug_id: high_strength
+      clinical_drug_id: high_strength
+      rxnorm_code: high_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-20'
+      days_supply: 30
+      supply_start_date: '2026-01-20'
+      supply_end_date: '2026-02-18'
+    - medication_id: brand
+      person_id: p
+      data_source: a
+      therapy_id: clinical:brand_high
+      therapy_name: brand_high
+      therapy_grain: clinical_drug
+      drug_id: brand_high
+      clinical_drug_id: brand_high
+      rxnorm_code: brand_high
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-31'
+      days_supply: 10
+      supply_start_date: '2026-01-31'
+      supply_end_date: '2026-02-09'
+    - medication_id: combination
+      person_id: p
+      data_source: a
+      therapy_id: clinical:combination
+      therapy_name: combination
+      therapy_grain: clinical_drug
+      drug_id: combination
+      clinical_drug_id: combination
+      rxnorm_code: combination
+      ingredient_id: ingredient_ab
+      ingredient_name: Ingredient A / Ingredient B
+      ingredient_type: MIN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-20'
+      days_supply: 30
+      supply_start_date: '2026-01-20'
+      supply_end_date: '2026-02-18'
+    - medication_id: different_form
+      person_id: p
+      data_source: a
+      therapy_id: clinical:solution
+      therapy_name: solution
+      therapy_grain: clinical_drug
+      drug_id: solution
+      clinical_drug_id: solution
+      rxnorm_code: solution
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_solution
+      dose_form_name: oral solution
+      dispensing_date: '2026-01-20'
+      days_supply: 30
+      supply_start_date: '2026-01-20'
+      supply_end_date: '2026-02-18'
+    - medication_id: other_source
+      person_id: p
+      data_source: b
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+  expect:
+    rows:
+    - medication_id: low
+      data_source: a
+      therapy_id: 6608c1e02b1f8d408263c4151c1af9ab
+      drug_code: ingredient_a
+      dose_form_id: form_tablet
+      episode_number: 1
+      contributed_covered_days: 30
+      therapy_grain: ingredient_combination_dose_form
+      drug_code_system: RxNorm
+    - medication_id: high
+      data_source: a
+      therapy_id: 6608c1e02b1f8d408263c4151c1af9ab
+      drug_code: ingredient_a
+      dose_form_id: form_tablet
+      episode_number: 1
+      contributed_covered_days: 19
+      therapy_grain: ingredient_combination_dose_form
+      drug_code_system: RxNorm
+    - medication_id: brand
+      data_source: a
+      therapy_id: 6608c1e02b1f8d408263c4151c1af9ab
+      drug_code: ingredient_a
+      dose_form_id: form_tablet
+      episode_number: 1
+      contributed_covered_days: 0
+      therapy_grain: ingredient_combination_dose_form
+      drug_code_system: RxNorm
+    - medication_id: combination
+      data_source: a
+      therapy_id: 284349d9d2c9402a69ff209dde693539
+      drug_code: ingredient_ab
+      dose_form_id: form_tablet
+      episode_number: 1
+      contributed_covered_days: 30
+      therapy_grain: ingredient_combination_dose_form
+      drug_code_system: RxNorm
+    - medication_id: different_form
+      data_source: a
+      therapy_id: 5a5d39a9c3838a15b1a8ea883781a38b
+      drug_code: ingredient_a
+      dose_form_id: form_solution
+      episode_number: 1
+      contributed_covered_days: 30
+      therapy_grain: ingredient_combination_dose_form
+      drug_code_system: RxNorm
+    - medication_id: other_source
+      data_source: b
+      therapy_id: 6608c1e02b1f8d408263c4151c1af9ab
+      drug_code: ingredient_a
+      dose_form_id: form_tablet
+      episode_number: 1
+      contributed_covered_days: 30
+      therapy_grain: ingredient_combination_dose_form
+      drug_code_system: RxNorm
+- name: episode_complete_vendor_pack_preserved_and_incomplete_mapping_excluded
+  model: drugs__episode_fill
+  overrides:
+    vars:
+      use_coderx_enterprise: true
+      drugs_as_of_date: '2026-11-10'
+      drugs_episode_gap_days: 30
+  given:
+  - input: ref('drugs__fill')
+    rows:
+    - medication_id: pack
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a | ingredient_b
+      ingredient_name: Ingredient A | Ingredient B
+      ingredient_type: IN | IN
+      dose_form_id: form_pack
+      dose_form_name: pack
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+    - medication_id: missing_ingredient
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: null
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+    - medication_id: missing_name
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: null
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+    - medication_id: missing_form
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: null
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+    - medication_id: missing_form_name
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: ' '
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+    - medication_id: blank_id
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ' '
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+  expect:
+    rows:
+    - medication_id: pack
+      drug_code: ingredient_a | ingredient_b
+      drug_name: Ingredient A | Ingredient B
+      dose_form_id: form_pack
+      therapy_id: 593500fb4e80e01faf00bb7664aa8826
+      drug_code_system: CodeRx ingredient group
+      episode_number: 1
+- name: combination_episode_gap_0_inclusive_boundary_and_overlap
+  model: drugs__episode_fill
+  overrides:
+    vars:
+      use_coderx_enterprise: true
+      drugs_as_of_date: '2026-11-10'
+      drugs_episode_gap_days: 0
+  given:
+  - input: ref('drugs__fill')
+    rows: &id001
+    - medication_id: first
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+    - medication_id: touching
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-31'
+      days_supply: 10
+      supply_start_date: '2026-01-31'
+      supply_end_date: '2026-02-09'
+    - medication_id: one_day_gap
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-02-11'
+      days_supply: 10
+      supply_start_date: '2026-02-11'
+      supply_end_date: '2026-02-20'
+    - medication_id: thirty_day_gap
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-03-23'
+      days_supply: 5
+      supply_start_date: '2026-03-23'
+      supply_end_date: '2026-03-27'
+    - medication_id: thirty_one_day_gap
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-04-28'
+      days_supply: 5
+      supply_start_date: '2026-04-28'
+      supply_end_date: '2026-05-02'
+    - medication_id: nested
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-10'
+      days_supply: 10
+      supply_start_date: '2026-01-10'
+      supply_end_date: '2026-01-19'
+    - medication_id: separate_source
+      person_id: p
+      data_source: b
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+  expect:
+    rows:
+    - medication_id: first
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 30
+    - medication_id: touching
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 10
+    - medication_id: one_day_gap
+      data_source: a
+      episode_number: 2
+      contributed_covered_days: 10
+    - medication_id: thirty_day_gap
+      data_source: a
+      episode_number: 3
+      contributed_covered_days: 5
+    - medication_id: thirty_one_day_gap
+      data_source: a
+      episode_number: 4
+      contributed_covered_days: 5
+    - medication_id: nested
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 0
+    - medication_id: separate_source
+      data_source: b
+      episode_number: 1
+      contributed_covered_days: 30
+- name: combination_episode_gap_1_inclusive_boundary_and_overlap
+  model: drugs__episode_fill
+  overrides:
+    vars:
+      use_coderx_enterprise: true
+      drugs_as_of_date: '2026-11-10'
+      drugs_episode_gap_days: 1
+  given:
+  - input: ref('drugs__fill')
+    rows: *id001
+  expect:
+    rows:
+    - medication_id: first
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 30
+    - medication_id: touching
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 10
+    - medication_id: one_day_gap
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 10
+    - medication_id: thirty_day_gap
+      data_source: a
+      episode_number: 2
+      contributed_covered_days: 5
+    - medication_id: thirty_one_day_gap
+      data_source: a
+      episode_number: 3
+      contributed_covered_days: 5
+    - medication_id: nested
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 0
+    - medication_id: separate_source
+      data_source: b
+      episode_number: 1
+      contributed_covered_days: 30
+- name: combination_episode_gap_30_inclusive_boundary_and_overlap
+  model: drugs__episode_fill
+  overrides:
+    vars:
+      use_coderx_enterprise: true
+      drugs_as_of_date: '2026-11-10'
+      drugs_episode_gap_days: 30
+  given:
+  - input: ref('drugs__fill')
+    rows: *id001
+  expect:
+    rows:
+    - medication_id: first
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 30
+    - medication_id: touching
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 10
+    - medication_id: one_day_gap
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 10
+    - medication_id: thirty_day_gap
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 5
+    - medication_id: thirty_one_day_gap
+      data_source: a
+      episode_number: 2
+      contributed_covered_days: 5
+    - medication_id: nested
+      data_source: a
+      episode_number: 1
+      contributed_covered_days: 0
+    - medication_id: separate_source
+      data_source: b
+      episode_number: 1
+      contributed_covered_days: 30
+- name: open_episode_fill_is_empty_even_with_paid_metadata
+  model: drugs__episode_fill
+  overrides:
+    vars:
+      use_coderx_enterprise: false
+      drugs_as_of_date: '2026-11-10'
+      drugs_episode_gap_days: 30
+  given:
+  - input: ref('drugs__fill')
+    rows:
+    - medication_id: paid_metadata
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low_strength
+      therapy_name: low_strength
+      therapy_grain: clinical_drug
+      drug_id: low_strength
+      clinical_drug_id: low_strength
+      rxnorm_code: low_strength
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+  expect:
+    rows: []
+- name: episode_stockpile_stays_at_clinical_product_before_strength_union
+  model: drugs__fill
+  overrides:
+    vars:
+      use_coderx_enterprise: true
+      drugs_as_of_date: '2026-11-10'
+      drugs_stockpile_early_refills: true
+  given:
+  - input: ref('drugs__medication')
+    rows:
+    - medication_id: first
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low
+      therapy_name: low
+      therapy_grain: clinical_drug
+      drug_id: low
+      clinical_drug_id: low
+      rxnorm_code: low
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-01'
+      days_supply: 30
+      exposure_status: usable
+    - medication_id: early_same
+      person_id: p
+      data_source: a
+      therapy_id: clinical:low
+      therapy_name: low
+      therapy_grain: clinical_drug
+      drug_id: low
+      clinical_drug_id: low
+      rxnorm_code: low
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-10'
+      days_supply: 10
+      exposure_status: usable
+    - medication_id: different_strength
+      person_id: p
+      data_source: a
+      therapy_id: clinical:high
+      therapy_name: high
+      therapy_grain: clinical_drug
+      drug_id: high
+      clinical_drug_id: high
+      rxnorm_code: high
+      ingredient_id: ingredient_a
+      ingredient_name: Ingredient A
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-20'
+      days_supply: 30
+      exposure_status: usable
+    - medication_id: combination
+      person_id: p
+      data_source: a
+      therapy_id: clinical:combo
+      therapy_name: combo
+      therapy_grain: clinical_drug
+      drug_id: combo
+      clinical_drug_id: combo
+      rxnorm_code: combo
+      ingredient_id: ingredient_ab
+      ingredient_name: Ingredient A / Ingredient B
+      ingredient_type: MIN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      dispensing_date: '2026-01-10'
+      days_supply: 30
+      exposure_status: usable
+  expect:
+    rows:
+    - medication_id: first
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+    - medication_id: early_same
+      supply_start_date: '2026-01-31'
+      supply_end_date: '2026-02-09'
+    - medication_id: different_strength
+      supply_start_date: '2026-01-20'
+      supply_end_date: '2026-02-18'
+    - medication_id: combination
+      supply_start_date: '2026-01-10'
+      supply_end_date: '2026-02-08'
+- name: episode_mapping_quality_distinguishes_missing_combination_form_supply_and_source
+  model: drugs__episode_mapping_quality
+  overrides:
+    vars:
+      use_coderx_enterprise: true
+      drugs_as_of_date: '2026-11-10'
+  given:
+  - input: ref('drugs__medication')
+    rows:
+    - medication_id: same
+      person_id: p
+      data_source: a
+      exposure_status: usable
+      ingredient_id: a
+      ingredient_name: A
+      dose_form_id: tablet
+      dose_form_name: oral tablet
+    - medication_id: missing
+      person_id: p
+      data_source: a
+      exposure_status: usable
+      ingredient_id: null
+      ingredient_name: null
+      dose_form_id: tablet
+      dose_form_name: oral tablet
+    - medication_id: no_days
+      person_id: p
+      data_source: a
+      exposure_status: missing_days_supply
+      ingredient_id: a
+      ingredient_name: A
+      dose_form_id: tablet
+      dose_form_name: oral tablet
+    - medication_id: same
+      person_id: p
+      data_source: b
+      exposure_status: usable
+      ingredient_id: a
+      ingredient_name: A
+      dose_form_id: null
+      dose_form_name: null
+  - input: ref('drugs__episode_fill')
+    rows:
+    - medication_id: same
+      person_id: p
+      data_source: a
+  expect:
+    rows:
+    - data_source: a
+      medication_claim_count: 3
+      usable_supply_claim_count: 2
+      episode_mapped_claim_count: 1
+      usable_claims_without_episode_mapping: 1
+      usable_claims_without_ingredient: 1
+      usable_claims_without_dose_form: 0
+      unusable_supply_claim_count: 1
+    - data_source: b
+      medication_claim_count: 1
+      usable_supply_claim_count: 1
+      episode_mapped_claim_count: 0
+      usable_claims_without_episode_mapping: 1
+      usable_claims_without_ingredient: 0
+      usable_claims_without_dose_form: 1
+      unusable_supply_claim_count: 0
+- name: open_episode_quality_does_not_label_unavailable_features_as_missing_data
+  model: drugs__episode_mapping_quality
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-10-26'
+      use_coderx_enterprise: false
+  given:
+  - input: ref('drugs__medication')
+    rows:
+    - medication_id: fill
+      person_id: person
+      data_source: a
+      exposure_status: usable
+  - input: ref('drugs__episode_fill')
+    rows: []
+  expect:
+    rows: []

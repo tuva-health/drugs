@@ -56,3 +56,4 @@ sc_generic_two_cad_20261101,sc_generic_two,scenario_economics,cad,2026-11-01,30,
 sc_brand_switched_brand_20261001,sc_brand_switched,scenario_economics,brand,2026-10-01,90,90,360
 sc_brand_switched_cad_20261101,sc_brand_switched,scenario_economics,cad,2026-11-01,30,30,9
 sc_brand_a_brand_20261020,sc_brand_a,scenario_economics_other,brand,2026-10-20,30,30,120
+rx_sc_coverage_control,sc_coverage_rx_control,scenario_coverage,t2d,2026-11-01,30,30,15

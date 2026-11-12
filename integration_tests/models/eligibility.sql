@@ -53,7 +53,7 @@ select
     cast(s.person_id as {{ dbt.type_string() }}) as person_id,
     cast(s.person_id as {{ dbt.type_string() }}) as member_id,
     cast(s.person_id as {{ dbt.type_string() }}) as subscriber_id,
-    cast('female' as {{ dbt.type_string() }}) as sex,
+    cast(case when s.person_id='sc_coverage_benign_prostatic_hyperplasia' then 'male' else 'female' end as {{ dbt.type_string() }}) as sex,
     cast('white' as {{ dbt.type_string() }}) as race,
     cast('1950-01-01' as date) as birth_date,
     cast(s.death_date as date) as death_date,
