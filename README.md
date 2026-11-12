@@ -25,7 +25,7 @@ packages:
     # Core 1.0 integration revision, including the CodeRx NDC fix.
     revision: 599e953e10fba61352bfb6e7d64c2a9b58335fb1
   - git: https://github.com/tuva-health/drugs.git
-    revision: 61ab86a7d30153aef1b653ea42d1f5f642aa7105
+    revision: f519999e37ced738348da967f1acc0e7672809e1
 ```
 
 ```yaml
