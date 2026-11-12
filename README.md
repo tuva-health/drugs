@@ -44,7 +44,7 @@ This is the 1.0 development branch; a 1.0 release has not been published. For lo
 
 Open terminology loads through Tuva Core. To use purchased Enterprise data, follow the [CodeRx Drug Database setup](https://www.thetuvaproject.com/coderx), load the full `coderx.packages`, `coderx.drugs` and `coderx.classes` tables in the target database, and set `use_coderx_enterprise: true` as a YAML boolean. Missing required Enterprise tables or columns produce an error; the package does not substitute Open data. No licensed CodeRx data is distributed in this repository.
 
-The package requests the custom schema `drugs`, or `<tuva_schema_prefix>_drugs` with a Tuva prefix. The root project's `generate_schema_name` policy determines the final name; dbt's default also adds `target.schema`. The notebook expects the final schema to be `drugs`.
+The package requests the custom schema `drugs`, or `<tuva_schema_prefix>_drugs` with a Tuva prefix. The root project's `generate_schema_name` policy determines the final name; dbt's default also adds `target.schema`.
 
 ## Outputs and definitions
 
@@ -101,7 +101,3 @@ The method draws on [OHDSI drug eras](https://ohdsi.github.io/CommonDataModel/cd
 All medication exposure comes from claims-derived `core.medication`. Additional Core tables supply payer-paid amounts, condition evidence, death/enrollment status and provenance. Patient identities and joins include `data_source`; a person in two sources may be counted twice. Deceased patients are excluded from current worklists.
 
 Worklists retain file dates and ingestion timestamps. File date takes precedence so reloading an old file does not make it appear current. Freshness flags support review; they do not certify complete claims capture. Rebuild as data arrives to keep materialized results current. A fixed assessment date does not recreate a historical warehouse snapshot.
-
-## Notebook
-
-[notebooks/drugs.ipynb](notebooks/drugs.ipynb) explains all four use cases with SQL, tables and Python charts. Set only the database in its first SQL cell. Queries use `drugs.table` and include all data sources. The standard notebook uses Snowflake named SQL results; other platforms may need their own result bindings. Synthetic scenarios illustrate the calculations and are not population findings.

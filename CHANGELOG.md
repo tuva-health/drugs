@@ -35,6 +35,6 @@ ingredients. The default permissible gap remains 30 uncovered days.
 This is a breaking change from 0.2.0 and earlier 1.0 development revisions.
 Episode, condition-status and opportunity IDs use Core's collision-safe hashing;
 episode grain and condition scope have changed. Rebuild the mart and downstream
-joins. A single SQL/Python notebook replaces the old SQL-only example. Separate
-Core source overrides and standalone Databricks deployment scripts are removed.
+joins. Separate Core source overrides and standalone Databricks deployment
+scripts are removed.
 No 1.0.0 release has been published.
