@@ -22,7 +22,7 @@ Add both packages to the root dbt project that maps your data to the Tuva Input 
 # packages.yml
 packages:
   - git: https://github.com/tuva-health/tuva-core.git
-    # Core 1.0 integration revision, including the CodeRx NDC fix.
+    # Tested Core main commit; includes the CodeRx NDC fix.
     revision: 599e953e10fba61352bfb6e7d64c2a9b58335fb1
   - git: https://github.com/tuva-health/drugs.git
     revision: f519999e37ced738348da967f1acc0e7672809e1
@@ -40,11 +40,22 @@ dbt deps
 dbt build --select +package:drugs --indirect-selection cautious
 ```
 
-This is the 1.0 development branch; a 1.0 release has not been published. For local Snowflake development, install the versions in [requirements-snowflake.txt](requirements-snowflake.txt).
+This is the Drugs 1.0 development branch; a Drugs 1.0 release has not been published. For local Snowflake development, install the versions in [requirements-snowflake.txt](requirements-snowflake.txt).
 
 Open terminology loads through Tuva Core. To use purchased Enterprise data, follow the [CodeRx Drug Database setup](https://www.thetuvaproject.com/coderx), load the full `coderx.packages`, `coderx.drugs` and `coderx.classes` tables in the target database, and set `use_coderx_enterprise: true` as a YAML boolean. Missing required Enterprise tables or columns produce an error; the package does not substitute Open data. No licensed CodeRx data is distributed in this repository.
 
 The package requests the custom schema `drugs`, or `<tuva_schema_prefix>_drugs` with a Tuva prefix. The root project's `generate_schema_name` policy determines the final name; dbt's default also adds `target.schema`.
+
+### Tested Core revisions
+
+Validation as of November 12, 2026 used Snowflake, `dbt-core==1.12.6` and `dbt-snowflake==1.12.4`, with Tuva synthetic data and controlled scenarios. Integration scenarios run through Tuva Core into Drugs. Each cell reports the standard 130-test Drugs suite; the separate NDC edge-case probe is described below.
+
+| Tuva Core revision | CodeRx Open | CodeRx Enterprise |
+| --- | --- | --- |
+| Recommended main commit [`599e953`](https://github.com/tuva-health/tuva-core/commit/599e953e10fba61352bfb6e7d64c2a9b58335fb1) | 130/130 passed | 130/130 passed |
+| Release tag `v1.0.0` ([`131d12a`](https://github.com/tuva-health/tuva-core/commit/131d12a5225282563917b76af92718b555c24d4d)) | 130/130 passed | 130/130 passed |
+
+**Known Core v1.0.0 limitation:** certain 10-digit NDCs can duplicate medication rows and assign the wrong drug. A targeted five-claim synthetic probe produced 14 rows with the tag and the expected five with `599e953`. The installation example therefore pins that main commit, which includes the NDC fix and leaves ambiguous unsegmented codes unmapped.
 
 ## Outputs and definitions
 
