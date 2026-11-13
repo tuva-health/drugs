@@ -1,12 +1,14 @@
 # Parse-only profile; never used for warehouse execution.
-drugs:
+default:
   target: parse
   outputs:
     parse:
-      type: databricks
-      host: parse-only.invalid
-      http_path: /sql/1.0/warehouses/unused
-      token: parse-only-placeholder
-      catalog: parse_only
-      schema: drugs
+      type: snowflake
+      account: parse-only.invalid
+      user: parse_only
+      authenticator: externalbrowser
+      role: parse_only
+      warehouse: parse_only
+      database: parse_only
+      schema: drugs_parse_only
       threads: 1

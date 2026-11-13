@@ -7,7 +7,10 @@
 {% endmacro %}
 
 {% macro drugs_coderx(table) %}
-  {{ return(source('coderx_enterprise' if drugs_enterprise() else 'coderx_open', table)) }}
+  {% if drugs_enterprise() %}
+    {{ return(source('coderx_enterprise', table)) }}
+  {% endif %}
+  {{ return(ref('terminology__coderx_' ~ table)) }}
 {% endmacro %}
 
 {% macro drugs_flag(column) %}
@@ -20,20 +23,5 @@
     cast('{{ var("drugs_as_of_date") }}' as date)
   {% else %}
     cast(current_timestamp as date)
-  {% endif %}
-{% endmacro %}
-
-{% macro drugs_float_type() %}
-  {# Spark FLOAT is 32-bit; decomposition must retain cent-level reconciliation. #}
-  {{ return('double' if target.type in ['databricks', 'spark'] else dbt.type_float()) }}
-{% endmacro %}
-
-{% macro drugs_ingredient_set_key(column) %}
-  {# Vendor pack lists can reorder/repeat concept IDs between releases.
-     Therapy identity is an unordered set; stockpiling still uses clinical product. #}
-  {% if target.type in ['databricks', 'spark'] %}
-    nullif(array_join(array_sort(array_distinct(split(replace({{ column }}, ' ', ''), '[|]'))), ' | '), '')
-  {% else %}
-    nullif(array_to_string(array_sort(array_distinct(split(replace({{ column }}, ' ', ''), '|'))), ' | '), '')
   {% endif %}
 {% endmacro %}

@@ -1,0 +1,4 @@
+person_id,data_source,clinical_drug_id,pricing_status,benchmark_claim_count,benchmark_person_count,generic_paid_per_unit,estimated_savings_per_30_days,estimated_annual_savings
+sc_brand_a,scenario_economics,617310,priced_for_review,4,3,0.3,111,1350.5
+sc_brand_b,scenario_economics,617310,priced_for_review,4,3,0.3,81,985.5
+sc_brand_a,scenario_economics_other,617310,insufficient_paid_benchmark,,,,,

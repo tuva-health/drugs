@@ -2,6 +2,11 @@
 -- Aggregate the patient/product parent, never the one-to-many NDC alternatives.
 select assessment_date,data_source,drug_name as brand_drug,clinical_drug_id,
  generic_alternative_name as generic_alternative,count(*) as patients_who_could_switch,
+ case when min(brand_screening_basis)=max(brand_screening_basis) then min(brand_screening_basis)
+      else 'mixed_screening_basis' end as brand_screening_basis,
+ case when min(generic_screening_basis)=max(generic_screening_basis) then min(generic_screening_basis)
+      else 'mixed_screening_basis' end as generic_screening_basis,
+ min(marketing_screening_applied_flag) as marketing_screening_applied_flag,
  sum(case when pricing_status='priced_for_review' then 1 else 0 end) as patients_with_savings_estimate,
  sum(case when pricing_status<>'priced_for_review' then 1 else 0 end) as patients_without_savings_estimate,
  sum(case when estimated_annual_savings>0 then 1 else 0 end) as patients_with_positive_estimated_savings,

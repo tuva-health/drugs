@@ -1,0 +1,1194 @@
+version: 2
+unit_tests:
+- name: condition_exact_levels_all_memberships_and_direct_precedence
+  model: drugs__drug_condition
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-11-11'
+      use_coderx_enterprise: false
+      drugs_refill_min_fills: 2
+      drugs_refill_lookahead_days: 7
+      drugs_refill_max_overdue_days: 30
+  given:
+  - input: ref('drugs__stg_drugs')
+    format: sql
+    rows: 'select cast(''generic'' as varchar) as drug_id, cast(''generic'' as varchar) as clinical_drug_id
+
+      union all
+
+      select cast(''brand'' as varchar) as drug_id, cast(''generic'' as varchar) as clinical_drug_id
+
+      union all
+
+      select cast(''direct'' as varchar) as drug_id, cast(''generic'' as varchar) as clinical_drug_id
+
+      union all
+
+      select cast(''multi'' as varchar) as drug_id, cast(''generic'' as varchar) as clinical_drug_id
+
+      union all
+
+      select cast(''no_prefix'' as varchar) as drug_id, cast(''generic'' as varchar) as clinical_drug_id'
+  - input: ref('drugs__stg_classes')
+    format: sql
+    rows: 'select cast(''generic'' as varchar) as drug_id, cast(''A'' as varchar) as atc_1_code, cast(''A10'' as
+      varchar) as atc_2_code, cast(''A10B'' as varchar) as atc_3_code, cast(''A10BA'' as varchar) as atc_4_code
+
+      union all
+
+      select cast(''generic'' as varchar) as drug_id, cast(''A'' as varchar) as atc_1_code, cast(''A10'' as varchar)
+      as atc_2_code, cast(''A10B'' as varchar) as atc_3_code, cast(''A10BA'' as varchar) as atc_4_code
+
+      union all
+
+      select cast(''direct'' as varchar) as drug_id, cast(''C'' as varchar) as atc_1_code, cast(''C10'' as varchar)
+      as atc_2_code, cast(''C10A'' as varchar) as atc_3_code, cast(''C10AA'' as varchar) as atc_4_code
+
+      union all
+
+      select cast(''multi'' as varchar) as drug_id, cast(''C'' as varchar) as atc_1_code, cast(''C10'' as varchar)
+      as atc_2_code, cast(''C10A'' as varchar) as atc_3_code, cast(''C10AA'' as varchar) as atc_4_code
+
+      union all
+
+      select cast(''multi'' as varchar) as drug_id, cast(''C'' as varchar) as atc_1_code, cast(''C10'' as varchar)
+      as atc_2_code, cast(''C10B'' as varchar) as atc_3_code, cast(''C10BA'' as varchar) as atc_4_code
+
+      union all
+
+      select cast(''no_prefix'' as varchar) as drug_id, cast(''A'' as varchar) as atc_1_code, cast(''A11'' as varchar)
+      as atc_2_code, cast(''A11A'' as varchar) as atc_3_code, cast(''A10BA'' as varchar) as atc_4_code'
+  - input: ref('drugs__condition_rule')
+    format: sql
+    rows: 'select cast(1 as integer) as rule_id, cast(''t2d'' as varchar) as condition_code, cast(''Type 2 Diabetes
+      Mellitus'' as varchar) as condition_name, cast(''Fixture'' as varchar) as condition_family, cast(''A10'' as
+      varchar) as atc_code, cast(2 as integer) as atc_level, cast(''qualifying'' as varchar) as evidence_strength,
+      cast(1 as integer) as gap_eligible_flag, cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as
+      refill_possible_flag
+
+      union all
+
+      select cast(2 as integer) as rule_id, cast(''cad'' as varchar) as condition_code, cast(''Coronary Artery Disease''
+      as varchar) as condition_name, cast(''Fixture'' as varchar) as condition_family, cast(''C10AA'' as varchar)
+      as atc_code, cast(4 as integer) as atc_level, cast(''possible'' as varchar) as evidence_strength, cast(1 as
+      integer) as gap_eligible_flag, cast(1 as integer) as refill_eligible_flag, cast(1 as integer) as refill_possible_flag
+
+      union all
+
+      select cast(3 as integer) as rule_id, cast(''cad'' as varchar) as condition_code, cast(''Coronary Artery Disease''
+      as varchar) as condition_name, cast(''Fixture'' as varchar) as condition_family, cast(''C10BA'' as varchar)
+      as atc_code, cast(4 as integer) as atc_level, cast(''qualifying'' as varchar) as evidence_strength, cast(1
+      as integer) as gap_eligible_flag, cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag'
+  expect:
+    rows:
+    - drug_id: generic
+      condition_code: t2d
+      qualifying_class_flag: 1
+      possible_class_flag: 0
+      refill_eligible_flag: 1
+      refill_qualifying_class_flag: 1
+    - drug_id: brand
+      condition_code: t2d
+      qualifying_class_flag: 1
+      possible_class_flag: 0
+      refill_eligible_flag: 1
+      refill_qualifying_class_flag: 1
+    - drug_id: direct
+      condition_code: cad
+      qualifying_class_flag: 0
+      possible_class_flag: 1
+      refill_eligible_flag: 1
+      refill_qualifying_class_flag: 0
+    - drug_id: multi
+      condition_code: cad
+      qualifying_class_flag: 1
+      possible_class_flag: 1
+      refill_eligible_flag: 1
+      refill_qualifying_class_flag: 1
+- name: condition_annual_window_includes_resolved_and_onset_fallback
+  model: drugs__condition_evidence
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-11-11'
+      use_coderx_enterprise: false
+      drugs_refill_min_fills: 2
+      drugs_refill_lookahead_days: 7
+      drugs_refill_max_overdue_days: 30
+  given:
+  - input: ref('core__condition')
+    format: sql
+    rows: 'select cast(''first'' as varchar) as condition_id, cast(''p'' as varchar) as person_id, cast(''a'' as
+      varchar) as data_source, cast(''claim'' as varchar) as claim_id, cast(''Asthma'' as varchar) as condition_name,
+      cast(''Respiratory'' as varchar) as condition_family, cast(''2025-11-12'' as date) as recorded_date, cast(null
+      as date) as onset_date, cast(null as date) as resolved_date, cast(''icd-10-cm'' as varchar) as code_system,
+      cast(''J45'' as varchar) as normalized_code, cast(''J45'' as varchar) as source_code, cast(null as timestamp)
+      as ingest_datetime
+
+      union all
+
+      select cast(''before'' as varchar) as condition_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''claim'' as varchar) as claim_id, cast(''Asthma'' as varchar) as condition_name, cast(''Respiratory''
+      as varchar) as condition_family, cast(''2025-11-11'' as date) as recorded_date, cast(null as date) as onset_date,
+      cast(null as date) as resolved_date, cast(''icd-10-cm'' as varchar) as code_system, cast(''J45'' as varchar)
+      as normalized_code, cast(''J45'' as varchar) as source_code, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''today'' as varchar) as condition_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''claim'' as varchar) as claim_id, cast(''Asthma'' as varchar) as condition_name, cast(''Respiratory''
+      as varchar) as condition_family, cast(''2026-11-11'' as date) as recorded_date, cast(null as date) as onset_date,
+      cast(null as date) as resolved_date, cast(''icd-10-cm'' as varchar) as code_system, cast(''J45'' as varchar)
+      as normalized_code, cast(''J45'' as varchar) as source_code, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''future'' as varchar) as condition_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''claim'' as varchar) as claim_id, cast(''Asthma'' as varchar) as condition_name, cast(''Respiratory''
+      as varchar) as condition_family, cast(''2026-11-12'' as date) as recorded_date, cast(null as date) as onset_date,
+      cast(null as date) as resolved_date, cast(''icd-10-cm'' as varchar) as code_system, cast(''J45'' as varchar)
+      as normalized_code, cast(''J45'' as varchar) as source_code, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''resolved'' as varchar) as condition_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''claim'' as varchar) as claim_id, cast(''Asthma'' as varchar) as condition_name, cast(''Respiratory''
+      as varchar) as condition_family, cast(''2026-04-01'' as date) as recorded_date, cast(null as date) as onset_date,
+      cast(''2026-05-01'' as date) as resolved_date, cast(''icd-10-cm'' as varchar) as code_system, cast(''J45''
+      as varchar) as normalized_code, cast(''J45'' as varchar) as source_code, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''onset'' as varchar) as condition_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''claim'' as varchar) as claim_id, cast(''Asthma'' as varchar) as condition_name, cast(''Respiratory''
+      as varchar) as condition_family, cast(null as date) as recorded_date, cast(''2026-01-01'' as date) as onset_date,
+      cast(null as date) as resolved_date, cast(''icd-10-cm'' as varchar) as code_system, cast(''J45'' as varchar)
+      as normalized_code, cast(''J45'' as varchar) as source_code, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''outside'' as varchar) as condition_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''claim'' as varchar) as claim_id, cast(''Not included'' as varchar) as condition_name,
+      cast(''Respiratory'' as varchar) as condition_family, cast(''2026-11-11'' as date) as recorded_date, cast(null
+      as date) as onset_date, cast(null as date) as resolved_date, cast(''icd-10-cm'' as varchar) as code_system,
+      cast(''J45'' as varchar) as normalized_code, cast(''J45'' as varchar) as source_code, cast(null as timestamp)
+      as ingest_datetime'
+  - input: ref('drugs__medical_claim_lineage')
+    format: sql
+    rows: select cast('p' as varchar) as person_id, cast('b' as varchar) as data_source, cast('claim' as varchar)
+      as claim_id, cast('2026-11-11' as date) as file_date, cast('2026-11-11 00:00:00' as timestamp) as ingest_datetime
+  - input: ref('drugs__condition_rule')
+    format: sql
+    rows: select cast(1 as integer) as rule_id, cast('asthma' as varchar) as condition_code, cast('Asthma' as varchar)
+      as condition_name, cast('Fixture' as varchar) as condition_family, cast('R03BA' as varchar) as atc_code, cast(4
+      as integer) as atc_level, cast('qualifying' as varchar) as evidence_strength, cast(1 as integer) as gap_eligible_flag,
+      cast(0 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag
+  expect:
+    rows:
+    - condition_id: first
+      file_date: null
+      ingest_datetime: null
+      freshness_lineage: unavailable
+    - condition_id: today
+      file_date: null
+      ingest_datetime: null
+      freshness_lineage: unavailable
+    - condition_id: resolved
+      file_date: null
+      ingest_datetime: null
+      freshness_lineage: unavailable
+    - condition_id: onset
+      file_date: null
+      ingest_datetime: null
+      freshness_lineage: unavailable
+- name: annual_medication_events_ignore_supply_and_current_activity
+  model: drugs__medication_condition
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-11-11'
+      use_coderx_enterprise: false
+      drugs_refill_min_fills: 2
+      drugs_refill_lookahead_days: 7
+      drugs_refill_max_overdue_days: 30
+  given:
+  - input: ref('drugs__medication')
+    format: sql
+    rows: 'select cast(''first'' as varchar) as medication_id, cast(''p'' as varchar) as person_id, cast(''a'' as
+      varchar) as data_source, cast(''therapy'' as varchar) as therapy_id, cast(''drug'' as varchar) as drug_id,
+      cast(''drug'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2025-11-12'' as
+      date) as dispensing_date, cast(null as integer) as days_supply, cast(''missing_days_supply'' as varchar) as
+      exposure_status, cast(null as date) as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''before'' as varchar) as medication_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''therapy'' as varchar) as therapy_id, cast(''drug'' as varchar) as drug_id, cast(''drug''
+      as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2025-11-11'' as date) as dispensing_date,
+      cast(30 as integer) as days_supply, cast(''missing_days_supply'' as varchar) as exposure_status, cast(null
+      as date) as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''today'' as varchar) as medication_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''therapy'' as varchar) as therapy_id, cast(''drug'' as varchar) as drug_id, cast(''drug''
+      as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-11'' as date) as dispensing_date,
+      cast(-1 as integer) as days_supply, cast(''missing_days_supply'' as varchar) as exposure_status, cast(null
+      as date) as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''future'' as varchar) as medication_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''therapy'' as varchar) as therapy_id, cast(''drug'' as varchar) as drug_id, cast(''drug''
+      as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-12'' as date) as dispensing_date,
+      cast(30 as integer) as days_supply, cast(''missing_days_supply'' as varchar) as exposure_status, cast(null
+      as date) as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''undated'' as varchar) as medication_id, cast(''p'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(''therapy'' as varchar) as therapy_id, cast(''drug'' as varchar) as drug_id, cast(''drug''
+      as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(null as date) as dispensing_date,
+      cast(30 as integer) as days_supply, cast(''missing_days_supply'' as varchar) as exposure_status, cast(null
+      as date) as file_date, cast(null as timestamp) as ingest_datetime'
+  - input: ref('drugs__drug_condition')
+    format: sql
+    rows: select cast('drug' as varchar) as drug_id, cast('t2d' as varchar) as condition_code, cast('Type 2 Diabetes
+      Mellitus' as varchar) as condition_name, cast(null as varchar) as condition_family, cast(null as integer)
+      as evidence_rule_id, cast(null as varchar) as evidence_atc_4_code, cast('qualifying' as varchar) as evidence_strength,
+      cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag, cast(1 as integer)
+      as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer) as refill_qualifying_class_flag
+  - input: ref('drugs__fill')
+    format: sql
+    rows: select cast(null as varchar) as person_id, cast(null as varchar) as data_source, cast(null as varchar)
+      as medication_id, cast(null as date) as supply_start_date, cast(null as date) as supply_end_date where 1=0
+  expect:
+    rows:
+    - medication_id: first
+      active_supply_flag: 0
+      qualifying_class_flag: 1
+    - medication_id: today
+      active_supply_flag: 0
+      qualifying_class_flag: 1
+- name: refills_require_repeat_same_therapy_dates_and_keep_due_fill_evidence
+  model: drugs__condition_medication_summary
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-11-11'
+      use_coderx_enterprise: false
+      drugs_refill_min_fills: 2
+      drugs_refill_lookahead_days: 7
+      drugs_refill_max_overdue_days: 30
+  given:
+  - input: ref('drugs__medication_condition')
+    format: sql
+    rows: 'select cast(''old90'' as varchar) as medication_id, cast(''repeat'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''old90
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-08-20'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-08-21''
+      as date) as file_date, cast(''2026-08-22 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-11-17'' as date) as supply_end_date, cast(1 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''new30'' as varchar) as medication_id, cast(''repeat'' as varchar) as person_id, cast(''a'' as
+      varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''new30
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-10-02''
+      as date) as file_date, cast(''2026-10-03 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''rescue'' as varchar) as medication_id, cast(''repeat'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''rescue'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''rescue
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-10''
+      as date) as file_date, cast(''2026-11-11 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(0 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(0 as integer)
+      as refill_qualifying_class_flag, cast(''2026-11-30'' as date) as supply_end_date, cast(1 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''drug1'' as varchar) as medication_id, cast(''different'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''one'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''drug1
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-09-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-09-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''drug2'' as varchar) as medication_id, cast(''different'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''two'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''drug2
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''claim1'' as varchar) as medication_id, cast(''same_date'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''claim1
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''claim2'' as varchar) as medication_id, cast(''same_date'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''claim2
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''first'' as varchar) as medication_id, cast(''mixed'' as varchar) as person_id, cast(''a'' as
+      varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''first
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-09-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(0 as integer) as qualifying_class_flag, cast(1 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(1 as integer) as refill_possible_flag, cast(0 as integer)
+      as refill_qualifying_class_flag, cast(''2026-09-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''last'' as varchar) as medication_id, cast(''mixed'' as varchar) as person_id, cast(''a'' as
+      varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''last
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(0 as integer) as qualifying_class_flag, cast(1 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(1 as integer) as refill_possible_flag, cast(0 as integer)
+      as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''first'' as varchar) as medication_id, cast(''split_source'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''first
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-09-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-09-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''last'' as varchar) as medication_id, cast(''split_source'' as varchar) as person_id, cast(''b''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''last
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''known'' as varchar) as medication_id, cast(''unknown'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''known
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-09-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-09-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''unknown'' as varchar) as medication_id, cast(''unknown'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''unknown
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''missing_days_supply'' as varchar) as exposure_status,
+      cast(''2026-11-11'' as date) as file_date, cast(''2026-11-11 00:00:00'' as timestamp) as ingest_datetime,
+      cast(''asthma'' as varchar) as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer)
+      as possible_class_flag, cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag,
+      cast(1 as integer) as refill_qualifying_class_flag, cast(null as date) as supply_end_date, cast(0 as integer)
+      as active_supply_flag
+
+      union all
+
+      select cast(''old90'' as varchar) as medication_id, cast(''repeat_null'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''old90
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-08-20'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(null
+      as date) as file_date, cast(null as timestamp) as ingest_datetime, cast(''asthma'' as varchar) as condition_code,
+      cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag, cast(1 as integer)
+      as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer) as refill_qualifying_class_flag,
+      cast(''2026-11-17'' as date) as supply_end_date, cast(1 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''new30'' as varchar) as medication_id, cast(''repeat_null'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''same'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''new30
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-10-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-10-02''
+      as date) as file_date, cast(''2026-10-03 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(1 as integer)
+      as refill_qualifying_class_flag, cast(''2026-10-30'' as date) as supply_end_date, cast(0 as integer) as active_supply_flag
+
+      union all
+
+      select cast(''rescue'' as varchar) as medication_id, cast(''repeat_null'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(''rescue'' as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(''rescue
+      name'' as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-01'' as date) as
+      dispensing_date, cast(null as integer) as days_supply, cast(''usable'' as varchar) as exposure_status, cast(''2026-11-10''
+      as date) as file_date, cast(''2026-11-11 02:00:00'' as timestamp) as ingest_datetime, cast(''asthma'' as varchar)
+      as condition_code, cast(1 as integer) as qualifying_class_flag, cast(0 as integer) as possible_class_flag,
+      cast(0 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag, cast(0 as integer)
+      as refill_qualifying_class_flag, cast(''2026-11-30'' as date) as supply_end_date, cast(1 as integer) as active_supply_flag'
+  expect:
+    rows:
+    - person_id: repeat
+      data_source: a
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: old90
+      maintenance_supply_end_date: '2026-11-17'
+      refill_class_confidence: qualifying
+      unknown_duration_flag: 0
+      treatment_evidence_file_date: '2026-08-21'
+      treatment_evidence_ingest_datetime: '2026-08-22 02:00:00'
+    - person_id: different
+      data_source: a
+      maintenance_fill_dates: 0
+      latest_maintenance_medication_id: null
+      maintenance_supply_end_date: null
+      refill_class_confidence: null
+      unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
+    - person_id: same_date
+      data_source: a
+      maintenance_fill_dates: 0
+      latest_maintenance_medication_id: null
+      maintenance_supply_end_date: null
+      refill_class_confidence: null
+      unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
+    - person_id: mixed
+      data_source: a
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: last
+      maintenance_supply_end_date: '2026-10-30'
+      refill_class_confidence: possible
+      unknown_duration_flag: 0
+      treatment_evidence_file_date: '2026-11-11'
+      treatment_evidence_ingest_datetime: '2026-11-11 00:00:00'
+    - person_id: split_source
+      data_source: a
+      maintenance_fill_dates: 0
+      latest_maintenance_medication_id: null
+      maintenance_supply_end_date: null
+      refill_class_confidence: null
+      unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
+    - person_id: split_source
+      data_source: b
+      maintenance_fill_dates: 0
+      latest_maintenance_medication_id: null
+      maintenance_supply_end_date: null
+      refill_class_confidence: null
+      unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
+    - person_id: unknown
+      data_source: a
+      maintenance_fill_dates: 0
+      latest_maintenance_medication_id: null
+      maintenance_supply_end_date: null
+      refill_class_confidence: null
+      unknown_duration_flag: 1
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
+    - person_id: repeat_null
+      data_source: a
+      maintenance_fill_dates: 2
+      latest_maintenance_medication_id: old90
+      maintenance_supply_end_date: '2026-11-17'
+      refill_class_confidence: qualifying
+      unknown_duration_flag: 0
+      treatment_evidence_file_date: null
+      treatment_evidence_ingest_datetime: null
+- name: annual_gap_priority_unknown_records_and_source_identity
+  model: drugs__condition_status
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-11-11'
+      use_coderx_enterprise: false
+      drugs_refill_min_fills: 2
+      drugs_refill_lookahead_days: 7
+      drugs_refill_max_overdue_days: 30
+  given:
+  - input: ref('drugs__condition_rule')
+    format: sql
+    rows: select cast(1 as integer) as rule_id, cast('asthma' as varchar) as condition_code, cast('Asthma' as varchar)
+      as condition_name, cast('Fixture' as varchar) as condition_family, cast('R03BA' as varchar) as atc_code, cast(4
+      as integer) as atc_level, cast('qualifying' as varchar) as evidence_strength, cast(1 as integer) as gap_eligible_flag,
+      cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag
+  - input: ref('drugs__condition_evidence')
+    format: sql
+    rows: 'select cast(''qualified_no_supply'' as varchar) as person_id, cast(''a'' as varchar) as data_source,
+      cast(''Asthma'' as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as
+      date) as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''qualified_and_unknown'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''possible_only'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''clean_absence'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''unmapped'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''undated'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma'' as
+      varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''old_unmapped'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''future_unmapped'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''first_day_unmapped'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''no_feed'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma'' as
+      varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''deceased'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''source_boundary'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''source_boundary'' as varchar) as person_id, cast(''b'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-01-01'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime'
+  - input: ref('drugs__patient_context')
+    format: sql
+    rows: 'select cast(''qualified_no_supply'' as varchar) as person_id, cast(''a'' as varchar) as data_source,
+      cast(''2026-11-11'' as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11''
+      as date) as source_latest_fill_date, cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review''
+      as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''qualified_and_unknown'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''possible_only'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''clean_absence'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''unmapped'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''undated'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''old_unmapped'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''future_unmapped'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''first_day_unmapped'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''no_feed'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(null as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''deceased'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(1 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''source_boundary'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''source_boundary'' as varchar) as person_id, cast(''b'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(''current_record_review'' as varchar) as outreach_readiness_status'
+  - input: ref('drugs__condition_medication_summary')
+    format: sql
+    rows: 'select cast(''qualified_no_supply'' as varchar) as person_id, cast(''a'' as varchar) as data_source,
+      cast(''asthma'' as varchar) as condition_code, cast(1 as integer) as prior_condition_fill_count, cast(1 as
+      integer) as qualifying_condition_fill_count, cast(0 as integer) as possible_condition_fill_count, cast(null
+      as integer) as active_condition_supply_flag, cast(null as integer) as active_maintenance_supply_flag, cast(1
+      as integer) as unknown_duration_flag, cast(null as integer) as possible_refill_mapping_flag, cast(null as
+      date) as maintenance_supply_end_date, cast(null as integer) as maintenance_fill_dates, cast(null as varchar)
+      as latest_maintenance_medication_id, cast(null as varchar) as latest_maintenance_drug_name, cast(null as varchar)
+      as latest_maintenance_therapy_id, cast(null as date) as latest_maintenance_dispensing_date, cast(null as varchar)
+      as refill_class_confidence, cast(null as date) as treatment_evidence_file_date, cast(null as timestamp) as
+      treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''qualified_and_unknown'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(2 as integer) as prior_condition_fill_count, cast(1 as integer) as qualifying_condition_fill_count,
+      cast(1 as integer) as possible_condition_fill_count, cast(null as integer) as active_condition_supply_flag,
+      cast(null as integer) as active_maintenance_supply_flag, cast(0 as integer) as unknown_duration_flag, cast(null
+      as integer) as possible_refill_mapping_flag, cast(null as date) as maintenance_supply_end_date, cast(null
+      as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id, cast(null
+      as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id, cast(null
+      as date) as latest_maintenance_dispensing_date, cast(null as varchar) as refill_class_confidence, cast(null
+      as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''possible_only'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(1 as integer) as prior_condition_fill_count, cast(0 as integer) as qualifying_condition_fill_count,
+      cast(1 as integer) as possible_condition_fill_count, cast(null as integer) as active_condition_supply_flag,
+      cast(null as integer) as active_maintenance_supply_flag, cast(0 as integer) as unknown_duration_flag, cast(null
+      as integer) as possible_refill_mapping_flag, cast(null as date) as maintenance_supply_end_date, cast(null
+      as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id, cast(null
+      as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id, cast(null
+      as date) as latest_maintenance_dispensing_date, cast(null as varchar) as refill_class_confidence, cast(null
+      as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''source_boundary'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(1 as integer) as prior_condition_fill_count, cast(1 as integer) as qualifying_condition_fill_count,
+      cast(0 as integer) as possible_condition_fill_count, cast(null as integer) as active_condition_supply_flag,
+      cast(null as integer) as active_maintenance_supply_flag, cast(0 as integer) as unknown_duration_flag, cast(null
+      as integer) as possible_refill_mapping_flag, cast(null as date) as maintenance_supply_end_date, cast(null
+      as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id, cast(null
+      as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id, cast(null
+      as date) as latest_maintenance_dispensing_date, cast(null as varchar) as refill_class_confidence, cast(null
+      as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime'
+  - input: ref('drugs__medication')
+    format: sql
+    rows: 'select cast(null as varchar) as medication_id, cast(''qualified_and_unknown'' as varchar) as person_id,
+      cast(''a'' as varchar) as data_source, cast(null as varchar) as therapy_id, cast(null as varchar) as drug_id,
+      cast(null as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-11'' as date)
+      as dispensing_date, cast(null as integer) as days_supply, cast(null as varchar) as exposure_status, cast(''2026-11-11''
+      as date) as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(null as varchar) as medication_id, cast(''unmapped'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(null as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(null as varchar)
+      as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-11'' as date) as dispensing_date,
+      cast(null as integer) as days_supply, cast(null as varchar) as exposure_status, cast(''2026-11-11'' as date)
+      as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(null as varchar) as medication_id, cast(''undated'' as varchar) as person_id, cast(''a'' as varchar)
+      as data_source, cast(null as varchar) as therapy_id, cast(''known'' as varchar) as drug_id, cast(null as varchar)
+      as drug_name, cast(null as varchar) as clinical_drug_id, cast(null as date) as dispensing_date, cast(null
+      as integer) as days_supply, cast(null as varchar) as exposure_status, cast(''2026-11-11'' as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(null as varchar) as medication_id, cast(''old_unmapped'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(null as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(null
+      as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2025-11-11'' as date) as dispensing_date,
+      cast(null as integer) as days_supply, cast(null as varchar) as exposure_status, cast(''2026-11-11'' as date)
+      as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(null as varchar) as medication_id, cast(''future_unmapped'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(null as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(null
+      as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2026-11-12'' as date) as dispensing_date,
+      cast(null as integer) as days_supply, cast(null as varchar) as exposure_status, cast(''2026-11-11'' as date)
+      as file_date, cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(null as varchar) as medication_id, cast(''first_day_unmapped'' as varchar) as person_id, cast(''a''
+      as varchar) as data_source, cast(null as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(null
+      as varchar) as drug_name, cast(null as varchar) as clinical_drug_id, cast(''2025-11-12'' as date) as dispensing_date,
+      cast(null as integer) as days_supply, cast(null as varchar) as exposure_status, cast(''2026-11-11'' as date)
+      as file_date, cast(null as timestamp) as ingest_datetime'
+  - input: ref('drugs__stg_drugs')
+    format: sql
+    rows: select cast('known' as varchar) as drug_id, cast('known' as varchar) as clinical_drug_id
+  - input: ref('drugs__stg_classes')
+    format: sql
+    rows: select cast('known' as varchar) as drug_id, cast('A' as varchar) as atc_1_code, cast('A10' as varchar)
+      as atc_2_code, cast('A10B' as varchar) as atc_3_code, cast('A10BA' as varchar) as atc_4_code
+  expect:
+    rows:
+    - person_id: qualified_no_supply
+      data_source: a
+      open_drug_gap_flag: 0
+    - person_id: qualified_and_unknown
+      data_source: a
+      open_drug_gap_flag: 0
+    - person_id: possible_only
+      data_source: a
+      open_drug_gap_flag: null
+    - person_id: clean_absence
+      data_source: a
+      open_drug_gap_flag: 1
+    - person_id: unmapped
+      data_source: a
+      open_drug_gap_flag: null
+    - person_id: undated
+      data_source: a
+      open_drug_gap_flag: null
+    - person_id: old_unmapped
+      data_source: a
+      open_drug_gap_flag: 1
+    - person_id: future_unmapped
+      data_source: a
+      open_drug_gap_flag: 1
+    - person_id: first_day_unmapped
+      data_source: a
+      open_drug_gap_flag: null
+    - person_id: no_feed
+      data_source: a
+      open_drug_gap_flag: null
+    - person_id: deceased
+      data_source: a
+      open_drug_gap_flag: 0
+    - person_id: source_boundary
+      data_source: a
+      open_drug_gap_flag: 0
+    - person_id: source_boundary
+      data_source: b
+      open_drug_gap_flag: 1
+- name: potential_refill_windows_mixed_class_and_separate_acute_scope
+  model: drugs__condition_status
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-11-11'
+      use_coderx_enterprise: false
+      drugs_refill_min_fills: 2
+      drugs_refill_lookahead_days: 7
+      drugs_refill_max_overdue_days: 30
+  given:
+  - input: ref('drugs__condition_rule')
+    format: sql
+    rows: 'select cast(1 as integer) as rule_id, cast(''asthma'' as varchar) as condition_code, cast(''Asthma''
+      as varchar) as condition_name, cast(''Fixture'' as varchar) as condition_family, cast(''R03BA'' as varchar)
+      as atc_code, cast(4 as integer) as atc_level, cast(''qualifying'' as varchar) as evidence_strength, cast(1
+      as integer) as gap_eligible_flag, cast(1 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag
+
+      union all
+
+      select cast(2 as integer) as rule_id, cast(''gout'' as varchar) as condition_code, cast(''Gout'' as varchar)
+      as condition_name, cast(''Fixture'' as varchar) as condition_family, cast(''M04AA'' as varchar) as atc_code,
+      cast(4 as integer) as atc_level, cast(''qualifying'' as varchar) as evidence_strength, cast(1 as integer)
+      as gap_eligible_flag, cast(0 as integer) as refill_eligible_flag, cast(0 as integer) as refill_possible_flag'
+  - input: ref('drugs__condition_evidence')
+    format: sql
+    rows: 'select cast(''due_today'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''soon_edge'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''soon_outside'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''overdue_edge'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''overdue_outside'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''mixed'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma'' as
+      varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''one_fill'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''no_supply'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Asthma''
+      as varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime
+
+      union all
+
+      select cast(''not_refill_scope'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''Gout''
+      as varchar) as condition_name, cast(''2026-11-11'' as date) as condition_date, cast(null as date) as file_date,
+      cast(null as timestamp) as ingest_datetime'
+  - input: ref('drugs__patient_context')
+    format: sql
+    rows: 'select cast(''due_today'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''soon_edge'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''soon_outside'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''overdue_edge'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''overdue_outside'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''mixed'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''one_fill'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''no_supply'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''not_refill_scope'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''2026-11-11''
+      as date) as assessment_date, cast(0 as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date,
+      cast(0 as integer) as recent_unmapped_drug_flag, cast(null as varchar) as outreach_readiness_status'
+  - input: ref('drugs__condition_medication_summary')
+    format: sql
+    rows: 'select cast(''due_today'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(null as integer) as prior_condition_fill_count, cast(2 as integer) as
+      qualifying_condition_fill_count, cast(0 as integer) as possible_condition_fill_count, cast(null as integer)
+      as active_condition_supply_flag, cast(0 as integer) as active_maintenance_supply_flag, cast(0 as integer)
+      as unknown_duration_flag, cast(null as integer) as possible_refill_mapping_flag, cast(''2026-11-10'' as date)
+      as maintenance_supply_end_date, cast(2 as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id,
+      cast(null as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id,
+      cast(null as date) as latest_maintenance_dispensing_date, cast(''qualifying'' as varchar) as refill_class_confidence,
+      cast(null as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''soon_edge'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(null as integer) as prior_condition_fill_count, cast(2 as integer) as
+      qualifying_condition_fill_count, cast(0 as integer) as possible_condition_fill_count, cast(null as integer)
+      as active_condition_supply_flag, cast(1 as integer) as active_maintenance_supply_flag, cast(0 as integer)
+      as unknown_duration_flag, cast(null as integer) as possible_refill_mapping_flag, cast(''2026-11-17'' as date)
+      as maintenance_supply_end_date, cast(2 as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id,
+      cast(null as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id,
+      cast(null as date) as latest_maintenance_dispensing_date, cast(''qualifying'' as varchar) as refill_class_confidence,
+      cast(null as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''soon_outside'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(null as integer) as prior_condition_fill_count, cast(2 as integer) as
+      qualifying_condition_fill_count, cast(0 as integer) as possible_condition_fill_count, cast(null as integer)
+      as active_condition_supply_flag, cast(1 as integer) as active_maintenance_supply_flag, cast(0 as integer)
+      as unknown_duration_flag, cast(null as integer) as possible_refill_mapping_flag, cast(''2026-11-18'' as date)
+      as maintenance_supply_end_date, cast(2 as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id,
+      cast(null as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id,
+      cast(null as date) as latest_maintenance_dispensing_date, cast(''qualifying'' as varchar) as refill_class_confidence,
+      cast(null as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''overdue_edge'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(null as integer) as prior_condition_fill_count, cast(2 as integer) as
+      qualifying_condition_fill_count, cast(0 as integer) as possible_condition_fill_count, cast(null as integer)
+      as active_condition_supply_flag, cast(0 as integer) as active_maintenance_supply_flag, cast(0 as integer)
+      as unknown_duration_flag, cast(null as integer) as possible_refill_mapping_flag, cast(''2026-10-11'' as date)
+      as maintenance_supply_end_date, cast(2 as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id,
+      cast(null as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id,
+      cast(null as date) as latest_maintenance_dispensing_date, cast(''qualifying'' as varchar) as refill_class_confidence,
+      cast(null as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''overdue_outside'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(null as integer) as prior_condition_fill_count, cast(2 as integer) as
+      qualifying_condition_fill_count, cast(0 as integer) as possible_condition_fill_count, cast(null as integer)
+      as active_condition_supply_flag, cast(0 as integer) as active_maintenance_supply_flag, cast(0 as integer)
+      as unknown_duration_flag, cast(null as integer) as possible_refill_mapping_flag, cast(''2026-10-10'' as date)
+      as maintenance_supply_end_date, cast(2 as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id,
+      cast(null as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id,
+      cast(null as date) as latest_maintenance_dispensing_date, cast(''qualifying'' as varchar) as refill_class_confidence,
+      cast(null as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''mixed'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma'' as
+      varchar) as condition_code, cast(null as integer) as prior_condition_fill_count, cast(0 as integer) as qualifying_condition_fill_count,
+      cast(2 as integer) as possible_condition_fill_count, cast(null as integer) as active_condition_supply_flag,
+      cast(0 as integer) as active_maintenance_supply_flag, cast(0 as integer) as unknown_duration_flag, cast(null
+      as integer) as possible_refill_mapping_flag, cast(''2026-11-10'' as date) as maintenance_supply_end_date,
+      cast(2 as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id, cast(null
+      as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id, cast(null
+      as date) as latest_maintenance_dispensing_date, cast(''possible'' as varchar) as refill_class_confidence,
+      cast(null as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''one_fill'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(null as integer) as prior_condition_fill_count, cast(2 as integer) as
+      qualifying_condition_fill_count, cast(0 as integer) as possible_condition_fill_count, cast(null as integer)
+      as active_condition_supply_flag, cast(0 as integer) as active_maintenance_supply_flag, cast(0 as integer)
+      as unknown_duration_flag, cast(null as integer) as possible_refill_mapping_flag, cast(null as date) as maintenance_supply_end_date,
+      cast(0 as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id, cast(null
+      as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id, cast(null
+      as date) as latest_maintenance_dispensing_date, cast(null as varchar) as refill_class_confidence, cast(null
+      as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime
+
+      union all
+
+      select cast(''no_supply'' as varchar) as person_id, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(null as integer) as prior_condition_fill_count, cast(2 as integer) as
+      qualifying_condition_fill_count, cast(0 as integer) as possible_condition_fill_count, cast(null as integer)
+      as active_condition_supply_flag, cast(0 as integer) as active_maintenance_supply_flag, cast(1 as integer)
+      as unknown_duration_flag, cast(null as integer) as possible_refill_mapping_flag, cast(''2026-11-10'' as date)
+      as maintenance_supply_end_date, cast(2 as integer) as maintenance_fill_dates, cast(null as varchar) as latest_maintenance_medication_id,
+      cast(null as varchar) as latest_maintenance_drug_name, cast(null as varchar) as latest_maintenance_therapy_id,
+      cast(null as date) as latest_maintenance_dispensing_date, cast(''qualifying'' as varchar) as refill_class_confidence,
+      cast(null as date) as treatment_evidence_file_date, cast(null as timestamp) as treatment_evidence_ingest_datetime'
+  - input: ref('drugs__medication')
+    format: sql
+    rows: select cast(null as varchar) as medication_id, cast(null as varchar) as person_id, cast(null as varchar)
+      as data_source, cast(null as varchar) as therapy_id, cast(null as varchar) as drug_id, cast(null as varchar)
+      as drug_name, cast(null as varchar) as clinical_drug_id, cast(null as date) as dispensing_date, cast(null
+      as integer) as days_supply, cast(null as varchar) as exposure_status, cast(null as date) as file_date, cast(null
+      as timestamp) as ingest_datetime where 1=0
+  - input: ref('drugs__stg_drugs')
+    format: sql
+    rows: select cast(null as varchar) as drug_id, cast(null as varchar) as clinical_drug_id where 1=0
+  - input: ref('drugs__stg_classes')
+    format: sql
+    rows: select cast(null as varchar) as drug_id, cast(null as varchar) as atc_1_code, cast(null as varchar) as
+      atc_2_code, cast(null as varchar) as atc_3_code, cast(null as varchar) as atc_4_code where 1=0
+  expect:
+    rows:
+    - person_id: due_today
+      needs_refill_flag: 1
+      refill_status: due_today
+    - person_id: soon_edge
+      needs_refill_flag: 1
+      refill_status: due_soon
+    - person_id: soon_outside
+      needs_refill_flag: 0
+      refill_status: not_due
+    - person_id: overdue_edge
+      needs_refill_flag: 1
+      refill_status: overdue
+    - person_id: overdue_outside
+      needs_refill_flag: 0
+      refill_status: not_due
+    - person_id: mixed
+      needs_refill_flag: 1
+      refill_status: due_today
+    - person_id: one_fill
+      needs_refill_flag: 0
+      refill_status: no_repeat_maintenance_history
+    - person_id: no_supply
+      needs_refill_flag: null
+      refill_status: unable_to_assess_days_supply
+    - person_id: not_refill_scope
+      needs_refill_flag: null
+      refill_status: not_in_scope
+- name: refill_denominator_only_seven_conditions_preserves_uncertainty
+  model: drugs__condition_summary
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-11-11'
+      use_coderx_enterprise: false
+      drugs_refill_min_fills: 2
+      drugs_refill_lookahead_days: 7
+      drugs_refill_max_overdue_days: 30
+  given:
+  - input: ref('drugs__condition_status')
+    format: sql
+    rows: 'select cast(''2026-11-11'' as date) as assessment_date, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(''Asthma'' as varchar) as condition_name, cast(''Fixture'' as varchar)
+      as condition_family, cast(1 as integer) as refill_condition_eligible_flag, cast(0 as integer) as open_drug_gap_flag,
+      cast(1 as integer) as needs_refill_flag, cast(null as integer) as qualifying_condition_fill_count, cast(0
+      as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date, cast(''current_record_review''
+      as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''2026-11-11'' as date) as assessment_date, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(''Asthma'' as varchar) as condition_name, cast(''Fixture'' as varchar)
+      as condition_family, cast(1 as integer) as refill_condition_eligible_flag, cast(null as integer) as open_drug_gap_flag,
+      cast(null as integer) as needs_refill_flag, cast(null as integer) as qualifying_condition_fill_count, cast(0
+      as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date, cast(''current_record_review''
+      as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''2026-11-11'' as date) as assessment_date, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(''Asthma'' as varchar) as condition_name, cast(''Fixture'' as varchar)
+      as condition_family, cast(1 as integer) as refill_condition_eligible_flag, cast(1 as integer) as open_drug_gap_flag,
+      cast(0 as integer) as needs_refill_flag, cast(null as integer) as qualifying_condition_fill_count, cast(0
+      as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date, cast(''current_record_review''
+      as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''2026-11-11'' as date) as assessment_date, cast(''a'' as varchar) as data_source, cast(''asthma''
+      as varchar) as condition_code, cast(''Asthma'' as varchar) as condition_name, cast(''Fixture'' as varchar)
+      as condition_family, cast(1 as integer) as refill_condition_eligible_flag, cast(0 as integer) as open_drug_gap_flag,
+      cast(0 as integer) as needs_refill_flag, cast(null as integer) as qualifying_condition_fill_count, cast(1
+      as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date, cast(''current_record_review''
+      as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''2026-11-11'' as date) as assessment_date, cast(''a'' as varchar) as data_source, cast(''gout''
+      as varchar) as condition_code, cast(''Gout'' as varchar) as condition_name, cast(''Fixture'' as varchar) as
+      condition_family, cast(0 as integer) as refill_condition_eligible_flag, cast(1 as integer) as open_drug_gap_flag,
+      cast(null as integer) as needs_refill_flag, cast(null as integer) as qualifying_condition_fill_count, cast(0
+      as integer) as deceased_flag, cast(''2026-11-11'' as date) as source_latest_fill_date, cast(''current_record_review''
+      as varchar) as outreach_readiness_status
+
+      union all
+
+      select cast(''2026-11-11'' as date) as assessment_date, cast(''a'' as varchar) as data_source, cast(''htn''
+      as varchar) as condition_code, cast(''Hypertension'' as varchar) as condition_name, cast(''Fixture'' as varchar)
+      as condition_family, cast(1 as integer) as refill_condition_eligible_flag, cast(null as integer) as open_drug_gap_flag,
+      cast(null as integer) as needs_refill_flag, cast(null as integer) as qualifying_condition_fill_count, cast(0
+      as integer) as deceased_flag, cast(null as date) as source_latest_fill_date, cast(''current_record_review''
+      as varchar) as outreach_readiness_status'
+  expect:
+    rows:
+    - condition_code: asthma
+      assessed_patients: 4
+      patients_needing_refill: 1
+      refill_denominator_patients: 3
+      percent_needing_refill: 33.33
+      refill_unassessable_patients: 1
+    - condition_code: gout
+      assessed_patients: 1
+      patients_needing_refill: 0
+      refill_denominator_patients: 0
+      percent_needing_refill: null
+      refill_unassessable_patients: 0
+    - condition_code: htn
+      assessed_patients: 1
+      patients_needing_refill: 0
+      refill_denominator_patients: 0
+      percent_needing_refill: null
+      refill_unassessable_patients: 1

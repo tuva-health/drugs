@@ -1,0 +1,3 @@
+packages:
+  - local: ../
+  - local: "{{ env_var('TUVA_CORE_PATH', '../../tuva-core') }}"

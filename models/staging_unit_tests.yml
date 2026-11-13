@@ -1,0 +1,27 @@
+version: 2
+unit_tests:
+  - name: packages_collapse_identical_rows_but_expose_conflicting_ndc_mappings
+    model: drugs__stg_packages
+    overrides:
+      vars:
+        use_coderx_enterprise: false
+    given:
+      - input: ref('terminology__coderx_packages')
+        format: sql
+        rows: |
+          select '00000000001' as ndc11, '100' as drug_id,
+                 'false' as is_brand, 'true' as active, 'true' as prescribable
+          union all select '00000000001', '100', 'false', 'true', 'true'
+          union all select '00000000002', '200', 'false', 'true', 'true'
+          union all select '00000000002', '201', 'false', 'true', 'true'
+          union all select '00000000003', '300', 'false', 'true', 'true'
+          union all select '00000000003', '300', 'true', 'true', 'true'
+          union all select '00000000004', '400', 'false', 'true', 'true'
+    expect:
+      rows:
+        - {ndc_code: '00000000001', drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1}
+        - {ndc_code: '00000000002', drug_id: '200', brand_flag: 0, active_flag: 1, prescribable_flag: 1}
+        - {ndc_code: '00000000002', drug_id: '201', brand_flag: 0, active_flag: 1, prescribable_flag: 1}
+        - {ndc_code: '00000000003', drug_id: '300', brand_flag: 0, active_flag: 1, prescribable_flag: 1}
+        - {ndc_code: '00000000003', drug_id: '300', brand_flag: 1, active_flag: 1, prescribable_flag: 1}
+        - {ndc_code: '00000000004', drug_id: '400', brand_flag: 0, active_flag: 1, prescribable_flag: 1}

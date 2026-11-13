@@ -1,0 +1,73 @@
+version: 2
+unit_tests:
+  - name: authorized_generic_alternatives_preserve_product_and_date_gates
+    model: drugs__generic_alternative
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_as_of_date: '2026-11-10'
+    given:
+      - input: ref('drugs__stg_drugs')
+        rows:
+          - {drug_id: '100', drug_name: Example generic, clinical_drug_id: '200', clinical_drug_name: Example clinical product, active_flag: 1, prescribable_flag: 1}
+          - {drug_id: '101', drug_name: Inactive generic, clinical_drug_id: '200', clinical_drug_name: Example clinical product, active_flag: 0, prescribable_flag: 1}
+          - {drug_id: '102', drug_name: Nonprescribable generic, clinical_drug_id: '200', clinical_drug_name: Example clinical product, active_flag: 1, prescribable_flag: 0}
+          - {drug_id: '103', drug_name: Unmapped generic, clinical_drug_id: null, clinical_drug_name: null, active_flag: 1, prescribable_flag: 1}
+      - input: ref('drugs__stg_packages')
+        rows:
+          - {ndc_code: authorized, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: '2020-01-01', end_marketing_date: null}
+          - {ndc_code: authorized_first_day, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: '2026-11-10', end_marketing_date: null}
+          - {ndc_code: authorized_last_day, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: '2026-11-10'}
+          - {ndc_code: anda, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: ANDA, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: unknown_category, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 0, marketing_category: null, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: authorized_future, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: '2026-11-11', end_marketing_date: null}
+          - {ndc_code: authorized_ended, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: '2026-11-09'}
+          - {ndc_code: authorized_invalid_dates, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 0, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: authorized_inactive_package, drug_id: '100', brand_flag: 0, active_flag: 0, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: authorized_nonprescribable_package, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 0, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: authorized_branded, drug_id: '100', brand_flag: 1, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: authorized_unknown_brand, drug_id: '100', brand_flag: null, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: authorized_inactive_drug, drug_id: '101', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: authorized_nonprescribable_drug, drug_id: '102', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: authorized_no_clinical_product, drug_id: '103', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: plain_nda, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: unrecognized_authorized_category, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: NDA AUTHORIZED GENERIC OTHER, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+          - {ndc_code: biologic, drug_id: '100', brand_flag: 0, active_flag: 1, prescribable_flag: 1, enterprise_marketing_enabled_flag: 1, marketing_screening_applied_flag: 1, marketing_category: BLA, marketing_dates_valid_flag: 1, start_marketing_date: null, end_marketing_date: null}
+    expect:
+      rows:
+        - {generic_ndc_code: authorized, generic_screening_basis: enterprise_marketing_metadata, alternative_basis: active_authorized_generic_same_clinical_drug}
+        - {generic_ndc_code: authorized_first_day, generic_screening_basis: enterprise_marketing_metadata, alternative_basis: active_authorized_generic_same_clinical_drug}
+        - {generic_ndc_code: authorized_last_day, generic_screening_basis: enterprise_marketing_metadata, alternative_basis: active_authorized_generic_same_clinical_drug}
+        - {generic_ndc_code: anda, generic_screening_basis: enterprise_marketing_metadata, alternative_basis: active_anda_same_clinical_drug}
+        - {generic_ndc_code: unknown_category, generic_screening_basis: active_product_flags, alternative_basis: active_nonbrand_same_clinical_drug}
+
+  - name: authorized_generic_claims_contribute_to_benchmark_count_and_median
+    model: drugs__generic_benchmark
+    overrides:
+      vars:
+        use_coderx_enterprise: true
+        drugs_as_of_date: '2026-11-10'
+        drugs_generic_lookback_days: 90
+    given:
+      - input: ref('drugs__current_brand')
+        rows:
+          - {person_id: brand_patient, data_source: a, clinical_drug_id: '200', payer: payer, plan: plan, quantity: 30, days_supply: 30, paid_amount: 120}
+      - input: ref('drugs__generic_alternative')
+        rows:
+          - {generic_ndc_code: authorized, clinical_drug_id: '200', alternative_basis: active_authorized_generic_same_clinical_drug}
+          - {generic_ndc_code: anda, clinical_drug_id: '200', alternative_basis: active_anda_same_clinical_drug}
+      - input: ref('drugs__medication')
+        rows:
+          # Authorized generics add two claims and change the median from 3 to 2.
+          # The first and last included dates are the inclusive 90-day boundaries.
+          - {medication_id: ag_first, person_id: g1, data_source: a, clinical_drug_id: '200', payer: payer, plan: plan, quantity: 30, days_supply: 30, paid_amount: 30, ndc_code: authorized, brand_flag: 0, exposure_status: usable, dispensing_date: '2026-08-13'}
+          - {medication_id: ag_last, person_id: g2, data_source: a, clinical_drug_id: '200', payer: payer, plan: plan, quantity: 30, days_supply: 30, paid_amount: 60, ndc_code: authorized, brand_flag: 0, exposure_status: usable, dispensing_date: '2026-11-10'}
+          - {medication_id: anda_middle, person_id: g2, data_source: a, clinical_drug_id: '200', payer: payer, plan: plan, quantity: 30, days_supply: 30, paid_amount: 90, ndc_code: anda, brand_flag: 0, exposure_status: usable, dispensing_date: '2026-10-10'}
+          - {medication_id: ag_before, person_id: g3, data_source: a, clinical_drug_id: '200', payer: payer, plan: plan, quantity: 30, days_supply: 30, paid_amount: 900, ndc_code: authorized, brand_flag: 0, exposure_status: usable, dispensing_date: '2026-08-12'}
+          - {medication_id: ag_after, person_id: g3, data_source: a, clinical_drug_id: '200', payer: payer, plan: plan, quantity: 30, days_supply: 30, paid_amount: 900, ndc_code: authorized, brand_flag: 0, exposure_status: usable, dispensing_date: '2026-11-11'}
+          - {medication_id: ag_other_source, person_id: g3, data_source: b, clinical_drug_id: '200', payer: payer, plan: plan, quantity: 30, days_supply: 30, paid_amount: 900, ndc_code: authorized, brand_flag: 0, exposure_status: usable, dispensing_date: '2026-10-10'}
+          - {medication_id: ag_other_plan, person_id: g3, data_source: a, clinical_drug_id: '200', payer: payer, plan: other_plan, quantity: 30, days_supply: 30, paid_amount: 900, ndc_code: authorized, brand_flag: 0, exposure_status: usable, dispensing_date: '2026-10-10'}
+          - {medication_id: ag_no_current_alternative, person_id: g3, data_source: a, clinical_drug_id: '200', payer: payer, plan: plan, quantity: 30, days_supply: 30, paid_amount: 900, ndc_code: authorized_ended, brand_flag: 0, exposure_status: usable, dispensing_date: '2026-10-10'}
+    expect:
+      rows:
+        - {person_id: brand_patient, data_source: a, clinical_drug_id: '200', benchmark_claim_count: 3, benchmark_person_count: 2, generic_paid_per_unit: 2, benchmark_first_fill_date: '2026-08-13', benchmark_last_fill_date: '2026-11-10'}

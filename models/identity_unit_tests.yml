@@ -1,0 +1,98 @@
+version: 2
+unit_tests:
+- name: drugs_episode_ids_preserve_source_and_person_boundaries
+  model: drugs__drug_episode
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-01-31'
+      use_coderx_enterprise: true
+  given:
+  - input: ref('drugs__episode_fill')
+    rows:
+    - person_id: p-s
+      data_source: a
+      therapy_id: 9ea542426199b8f9729336a500f8a3e5
+      therapy_name: X (oral tablet)
+      therapy_grain: ingredient_combination_dose_form
+      drug_code: x
+      drug_name: X
+      episode_number: 1
+      medication_id: one
+      dispensing_date: '2026-01-01'
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      contributed_covered_days: 30
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      drug_code_system: RxNorm
+    - person_id: p
+      data_source: s-a
+      therapy_id: 9ea542426199b8f9729336a500f8a3e5
+      therapy_name: X (oral tablet)
+      therapy_grain: ingredient_combination_dose_form
+      drug_code: x
+      drug_name: X
+      episode_number: 1
+      medication_id: two
+      dispensing_date: '2026-01-01'
+      supply_start_date: '2026-01-01'
+      supply_end_date: '2026-01-30'
+      contributed_covered_days: 30
+      ingredient_type: IN
+      dose_form_id: form_tablet
+      dose_form_name: oral tablet
+      drug_code_system: RxNorm
+  expect:
+    rows:
+    - person_id: p-s
+      data_source: a
+      episode_id: ca8c1aa43099724f2e3a02d371df1f9a
+    - person_id: p
+      data_source: s-a
+      episode_id: a01632146356a146201177eaf83d15bc
+- name: drugs_opportunity_ids_preserve_source_and_person_boundaries
+  model: drugs__brand_generic_opportunity
+  overrides:
+    vars:
+      drugs_as_of_date: '2026-01-31'
+      use_coderx_enterprise: true
+  given:
+  - input: ref('drugs__current_brand')
+    rows:
+    - person_id: p-s
+      data_source: a
+      medication_id: one
+      clinical_drug_id: x
+      paid_amount: 100
+      quantity: 30
+      days_supply: 30
+    - person_id: p
+      data_source: s-a
+      medication_id: two
+      clinical_drug_id: x
+      paid_amount: 100
+      quantity: 30
+      days_supply: 30
+  - input: ref('drugs__generic_alternative')
+    rows:
+    - clinical_drug_id: x
+      generic_ndc_code: generic
+  - input: ref('drugs__patient_context')
+    rows:
+    - person_id: p-s
+      data_source: a
+      deceased_flag: 0
+    - person_id: p
+      data_source: s-a
+      deceased_flag: 0
+  - input: ref('drugs__generic_benchmark')
+    rows: []
+  expect:
+    rows:
+    - person_id: p-s
+      data_source: a
+      opportunity_id: a0c5c3f1af9485055d33a70ce331ebad
+    - person_id: p
+      data_source: s-a
+      opportunity_id: bbde90287ba010a8348fb2f84be6cb22

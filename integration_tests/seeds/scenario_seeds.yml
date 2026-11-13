@@ -1,0 +1,86 @@
+version: 2
+seeds:
+- name: scenario_products
+  config:
+    column_types:
+      drug_key: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      ndc_code: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      drug_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      clinical_drug_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      ingredient_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      ingredient_name: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+- name: scenario_people
+  config:
+    column_types:
+      person_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      data_source: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      death_flag: integer
+      death_date: date
+- name: scenario_diagnoses
+  config:
+    column_types:
+      claim_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      person_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      data_source: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      condition_code: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      condition_name: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      diagnosis_code: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      claim_date: date
+- name: scenario_pharmacy_claims
+  config:
+    column_types:
+      claim_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      person_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      data_source: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      drug_key: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      dispensing_date: date
+      days_supply: integer
+      quantity: integer
+      paid_amount: decimal(18,4)
+- name: expected_condition_status
+  config:
+    column_types:
+      person_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      data_source: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      condition_code: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      condition_name: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      open_drug_gap_flag: integer
+      needs_refill_flag: integer
+      estimated_refill_due_date: date
+      evidence_claim_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+- name: expected_condition_summary
+  config:
+    column_types:
+      data_source: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      condition_code: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      assessed_patients: integer
+      patients_with_open_gaps: integer
+      patients_needing_refill: integer
+      refill_denominator_patients: integer
+      percent_needing_refill: decimal(18,4)
+      gap_unassessable_patients: integer
+      refill_unassessable_patients: integer
+- name: expected_episodes
+  config:
+    column_types:
+      person_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      data_source: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      drug_code: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      episode_number: integer
+      start_date: date
+      end_date: date
+      fill_count: integer
+      covered_days: integer
+      uncovered_days: integer
+- name: expected_brand_opportunities
+  config:
+    column_types:
+      person_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      data_source: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      clinical_drug_id: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      pricing_status: '{{ "string" if target.type in ["databricks", "spark", "bigquery"] else "varchar(255)" }}'
+      benchmark_claim_count: integer
+      benchmark_person_count: integer
+      generic_paid_per_unit: decimal(18,4)
+      estimated_savings_per_30_days: decimal(18,4)
+      estimated_annual_savings: decimal(18,4)

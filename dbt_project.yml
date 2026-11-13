@@ -1,10 +1,10 @@
 name: drugs
-version: 0.2.0
+version: 1.0.0
 config-version: 2
 require-dbt-version:
 - '>=1.10.5'
 - <2.0.0
-profile: drugs
+profile: default
 model-paths:
 - models
 macro-paths:
@@ -13,22 +13,14 @@ seed-paths:
 - seeds
 test-paths:
 - tests
-analysis-paths:
-- analyses
 clean-targets:
 - target
 - dbt_packages
 vars:
   use_coderx_enterprise: false
-  drugs_core_schema: core
-  drugs_terminology_schema: terminology
-  drugs_coderx_schema: terminology
-  drugs_coderx_table_prefix: coderx_enterprise_
   drugs_as_of_date: null
   drugs_episode_gap_days: 30
   drugs_stockpile_early_refills: false
-  drugs_condition_lookback_days: 365
-  drugs_uncertain_exposure_days: 365
   drugs_refill_lookahead_days: 7
   drugs_refill_max_overdue_days: 30
   drugs_refill_min_fills: 2

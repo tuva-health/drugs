@@ -1,0 +1,48 @@
+name: drugs_integration_tests
+version: '1.0.0'
+config-version: 2
+profile: default
+
+model-paths: [models]
+seed-paths: [seeds]
+test-paths: [tests]
+macro-paths: [macros]
+clean-targets: [target, dbt_packages]
+
+on-run-start:
+  - '{{ drugs_test_target_schema() }}'
+
+vars:
+  claims_enabled: true
+  clinical_enabled: false
+  provider_attribution_enabled: false
+  data_quality_enabled: false
+  enable_data_quality_failure_keys: false
+  parity_enabled: false
+  use_coderx_enterprise: false
+  synthetic_data_size: small
+  tuva_core_data_asset_version: '1.0.0'
+  tuva_schema_prefix: drugs_test
+  tuva_last_run: '2026-11-10 00:00:00'
+  drugs_as_of_date: '2026-11-10'
+  drugs_episode_gap_days: 30
+  drugs_stockpile_early_refills: false
+
+dispatch:
+  - macro_namespace: dbt_utils
+    search_order: [drugs_integration_tests, the_tuva_project, dbt_utils]
+
+models:
+  drugs_integration_tests:
+    +materialized: table
+    +schema: "{{ var('tuva_schema_prefix', 'drugs_test') }}_input_layer"
+    +tags: [drugs_scenarios]
+
+seeds:
+  drugs_integration_tests:
+    +schema: "{{ var('tuva_schema_prefix', 'drugs_test') }}_scenario_inputs"
+    +tags: [drugs_scenarios]
+
+flags:
+  require_generic_test_arguments_property: true
+  require_ref_searches_node_package_before_root: true
