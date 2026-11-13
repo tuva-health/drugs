@@ -48,7 +48,7 @@ The package requests the custom schema `drugs`, or `<tuva_schema_prefix>_drugs` 
 
 ### Tested Core revisions
 
-Validation as of November 12, 2026 used Snowflake, `dbt-core==1.12.6` and `dbt-snowflake==1.12.4`, with Tuva synthetic data and controlled scenarios. Integration scenarios run through Tuva Core into Drugs. Each cell reports the standard 130-test Drugs suite; the separate NDC edge-case probe is described below.
+Validation as of November 13, 2026 used Snowflake, `dbt-core==1.12.6` and `dbt-snowflake==1.12.4`, with Tuva synthetic data and controlled scenarios. Integration scenarios run through Tuva Core into Drugs. Enterprise validation uses a fresh licensed S3 delivery; all 14 tables were loaded and the three runtime tables were checked for required columns and preserved identifiers. Each cell reports the standard 130-test Drugs suite; the separate NDC edge-case probe is described below.
 
 | Tuva Core revision | CodeRx Open | CodeRx Enterprise |
 | --- | --- | --- |
